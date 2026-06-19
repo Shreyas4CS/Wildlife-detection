@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WildGuard · Animal Crossing Detection · CognoSpace</title>
+
+<!-- TensorFlow.js + MobileNet + KNN (teachable-machine style, trains in browser) -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.5/dist/knn-classifier.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#1F2A52;
+    --ink-soft:#54608a;
+    --coral:#F96167;
+    --coral-dark:#d8474d;
+    --amber:#FFC233;
+    --forest:#2E7D55;
+    --forest-soft:#e3f3ea;
+    --cream:#FFFBF3;
+    --card:#FFFFFF;
+    --line:#e7e2d6;
+    --shadow:0 10px 30px rgba(31,42,82,.08);
+    --shadow-hard:6px 6px 0 var(--ink);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:
+      radial-gradient(1200px 500px at 80% -10%, #fff4dd 0%, transparent 60%),
+      var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{font-family:'Fredoka',sans-serif;font-weight:600;margin:0}
+  button{font-family:'Fredoka',sans-serif;cursor:pointer;border:none;background:none}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  /* =========================================================
+     NAV  — single sticky row, never wraps on desktop
+     ========================================================= */
+  nav.top-nav{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:14px;
+    padding:12px 26px;
+    background:rgba(255,251,243,.93);
+    backdrop-filter:blur(10px);
+    border-bottom:3px solid var(--ink);
+    box-shadow:0 2px 0 rgba(31,42,82,.06);
+  }
+
+  /* ---- left: school brand ---- */
+  .nav-brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+  /* logo slot — any img stays bounded, fallback badge is used when no image available */
+  .nav-brand .logo-img{height:44px;width:auto;max-width:130px;object-fit:contain;display:block;border-radius:8px}
+  .nav-brand .logo-badge{
+    height:44px;width:44px;border-radius:12px;flex:0 0 auto;
+    background:var(--ink);color:#fff;display:grid;place-items:center;
+    font-family:'Fredoka';font-weight:700;font-size:20px;
+    box-shadow:3px 3px 0 var(--coral);
+  }
+  .nav-brand .school-txt{line-height:1.2;min-width:0}
+  .nav-brand .school-txt .sname{
+    font-family:'Fredoka';font-weight:600;font-size:14.5px;color:var(--ink);
+    white-space:nowrap;
+  }
+  .nav-brand .school-txt .spow{
+    font-family:'Nunito';font-size:10px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:1px;
+  }
+  .nav-brand .school-txt .spow b{color:var(--coral)}
+
+  /* ---- center: app title ---- */
+  .nav-center{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1;pointer-events:none}
+  .nav-center .app-title{font-family:'Fredoka';font-weight:700;font-size:22px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .nav-center .app-sub{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+
+  /* ---- right: actions ---- */
+  .nav-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+  .nav-sep{width:2px;height:28px;background:var(--line);border-radius:2px;opacity:.25}
+
+  /* status pill */
+  .stat-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'Fredoka';font-weight:600;font-size:14px;
+    background:#fff;border:2px solid var(--ink);border-radius:30px;
+    padding:8px 14px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;
+  }
+  .stat-pill .dot{width:9px;height:9px;border-radius:50%;background:#c2bdb0;flex:0 0 auto}
+  .stat-pill.on{border-color:var(--forest);color:var(--forest)}
+  .stat-pill.on .dot{background:var(--forest);box-shadow:0 0 0 3px rgba(46,125,85,.18)}
+
+  /* connect button */
+  .btn-connect{
+    background:var(--coral);color:#fff;border:3px solid var(--ink);
+    border-radius:30px;padding:9px 17px;font-size:14px;font-weight:600;
+    box-shadow:3px 3px 0 var(--ink);transition:transform .1s ease,box-shadow .1s ease;
+    white-space:nowrap;font-family:'Fredoka';
+  }
+  .btn-connect:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .btn-connect:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+  .btn-connect.disc{background:#fff;color:var(--ink)}
+
+  /* admin button */
+  .btn-admin{
+    background:#fff;color:var(--ink);border:3px solid var(--ink);
+    border-radius:30px;padding:9px 17px;font-size:14px;font-weight:600;
+    box-shadow:3px 3px 0 var(--ink);transition:transform .1s ease,box-shadow .1s ease;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Fredoka';
+  }
+  .btn-admin:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .btn-admin:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+  .btn-admin.active-mode{background:var(--ink);color:#fff}
+  .btn-admin.unlocked-mode{border-color:var(--forest);color:var(--forest)}
+  .btn-admin.active-mode.unlocked-mode{background:var(--forest);color:#fff;border-color:var(--forest)}
+
+  /* responsive: collapse to 2-row layout */
+  @media(max-width:920px){
+    nav.top-nav{flex-wrap:wrap;gap:10px;padding:11px 16px}
+    .nav-center{flex:1 1 auto;order:2;align-items:flex-end;text-align:right}
+    .nav-brand{order:1}
+    .nav-right{order:3;flex:1 1 100%;border-top:2px solid var(--line);padding-top:10px;margin-top:2px;justify-content:flex-start}
+    .nav-sep{display:none}
+  }
+  @media(max-width:560px){
+    .nav-center .app-title{font-size:18px}
+    .nav-brand .school-txt .sname{font-size:13px}
+    .stat-pill{font-size:12.5px;padding:7px 11px}
+    .btn-connect,.btn-admin{font-size:13px;padding:8px 13px}
+    .nav-right{gap:8px}
+  }
+
+  .btn{
+    border:2px solid var(--ink);border-radius:12px;padding:9px 15px;
+    font-weight:600;font-size:14px;background:#fff;color:var(--ink);
+    transition:transform .08s ease, box-shadow .08s ease;
+    box-shadow:3px 3px 0 var(--ink);
+  }
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+  .btn:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+  .btn.coral{background:var(--coral);color:#fff;border-color:var(--coral-dark);box-shadow:3px 3px 0 var(--coral-dark)}
+  .btn.coral:hover{box-shadow:4px 4px 0 var(--coral-dark)}
+  .btn.ink{background:var(--ink);color:#fff}
+  .btn.ghost{box-shadow:none;border-color:var(--line)}
+  .btn.ghost:hover{box-shadow:none;border-color:var(--ink)}
+  .btn.sm{padding:6px 11px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink)}
+
+  /* ---------- mode tabs ---------- */
+  .tabs{max-width:1180px;margin:18px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
+  .tab{
+    display:flex;align-items:center;gap:9px;
+    border:2px solid var(--ink);border-radius:14px;
+    padding:11px 18px;font-size:16px;font-weight:600;background:#fff;color:var(--ink);
+    box-shadow:var(--shadow-hard);transition:transform .08s, box-shadow .08s;
+  }
+  .tab:hover{transform:translate(-1px,-1px)}
+  .tab .tg{font-size:18px}
+  .tab.active.training{background:var(--amber)}
+  .tab.active.live{background:var(--forest);color:#fff}
+  .tab.active.admin{background:var(--ink);color:#fff}
+  .tab[data-locked="true"]::after{content:"🔒";margin-left:2px;font-size:13px}
+
+  /* ---------- layout ---------- */
+  main{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--card);border:2px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .card .head{padding:14px 18px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px}
+  .card .head h3{font-size:18px}
+  .card .head .eyebrow{font-family:'Nunito';font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .card .body{padding:18px}
+  .tag{font-family:'Nunito';font-weight:800;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .tag.amber{background:#fff2cf;color:#8a6400}
+  .tag.green{background:var(--forest-soft);color:var(--forest)}
+  .tag.ink{background:#eceaf4;color:var(--ink)}
+
+  /* camera */
+  .stage{position:relative;background:#0e1430;border-radius:14px;overflow:hidden;aspect-ratio:4/3;border:2px solid var(--ink)}
+  .stage video,.stage img.shot{width:100%;height:100%;object-fit:cover;display:block}
+  .stage .empty{position:absolute;inset:0;display:grid;place-items:center;color:#9aa6d6;text-align:center;font-weight:700;padding:24px;font-family:'Fredoka'}
+  .cam-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .stage .live-badge{
+    position:absolute;top:10px;left:10px;display:none;align-items:center;gap:6px;
+    background:rgba(249,97,103,.92);color:#fff;font-family:'Fredoka';font-weight:600;
+    font-size:12px;padding:4px 10px;border-radius:999px;
+  }
+  .stage .live-badge.show{display:inline-flex}
+  .stage .live-badge .b{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* pipeline steps */
+  .pipe{display:flex;flex-direction:column;gap:9px}
+  .step{
+    display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;
+    border:2px solid var(--line);background:#fbfaf6;opacity:.55;transition:.25s;
+  }
+  .step.active{opacity:1;border-color:var(--amber);background:#fff8e6}
+  .step.done{opacity:1;border-color:var(--forest);background:var(--forest-soft)}
+  .step .num{
+    width:28px;height:28px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;
+    font-family:'Fredoka';font-weight:700;background:#fff;border:2px solid var(--ink);font-size:13px;
+  }
+  .step.done .num{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .step.active .num{background:var(--amber);border-color:var(--ink)}
+  .step .label{font-family:'Fredoka';font-weight:500;font-size:14.5px}
+  .step .sub{font-size:12px;color:var(--ink-soft);font-weight:600}
+  .step .spin{margin-left:auto;width:16px;height:16px;border:3px solid #e7e2d6;border-top-color:var(--ink);border-radius:50%;display:none;animation:spin .7s linear infinite}
+  .step.active .spin{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* trained classes */
+  .classlist{display:flex;flex-direction:column;gap:10px}
+  .class-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:#fff}
+  .class-row .swatch{width:42px;height:42px;border-radius:10px;object-fit:cover;border:2px solid var(--ink);background:#eee}
+  .class-row .meta{flex:1;min-width:0}
+  .class-row .meta .name{font-family:'Fredoka';font-weight:600;font-size:15px;display:flex;align-items:center;gap:7px}
+  .class-row .meta .count{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .empty-hint{text-align:center;color:var(--ink-soft);font-weight:700;padding:18px;font-size:14px}
+
+  /* live readout */
+  .readout{text-align:center;padding:6px 0 4px}
+  .readout .verdict{font-family:'Fredoka';font-weight:700;font-size:30px;line-height:1.1}
+  .readout .verdict.danger{color:var(--coral)}
+  .readout .verdict.safe{color:var(--forest)}
+  .readout .conf{font-weight:800;color:var(--ink-soft);margin-top:4px;font-size:13px}
+  .barwrap{height:12px;border-radius:999px;background:#eee;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+  .bar{height:100%;width:0;background:var(--forest);transition:width .25s, background .25s;border-radius:999px}
+
+  /* diorama */
+  .diorama{margin-top:14px}
+  .road-svg{width:100%;display:block;border-radius:14px;border:2px solid var(--ink);background:#bfe3c9}
+  .legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* admin */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-family:'Fredoka';font-weight:500;font-size:14px;margin-bottom:7px}
+  .field .row{display:flex;align-items:center;gap:12px}
+  input[type=range]{flex:1;accent-color:var(--coral)}
+  .anglebox{min-width:54px;text-align:center;font-family:'JetBrains Mono';font-weight:600;background:var(--ink);color:#fff;padding:5px 8px;border-radius:8px;font-size:13px}
+  input[type=text],input[type=password]{
+    width:100%;padding:11px 13px;border:2px solid var(--line);border-radius:11px;
+    font-family:'Nunito';font-weight:600;font-size:14px;color:var(--ink);background:#fff;
+  }
+  input:focus{outline:none;border-color:var(--ink)}
+  .divider{height:2px;background:var(--line);margin:18px 0;border-radius:2px}
+  .lockwall{text-align:center;padding:38px 22px}
+  .lockwall .ico{font-size:40px}
+  .lockwall h3{margin:10px 0 4px;font-size:20px}
+  .lockwall p{color:var(--ink-soft);font-weight:600;margin:0 0 16px}
+
+  /* serial console */
+  .console{margin-top:18px}
+  .console .body{padding:0}
+  .term{
+    background:#0e1430;color:#cfe3ff;font-family:'JetBrains Mono';font-size:12.5px;
+    padding:14px;max-height:200px;overflow:auto;line-height:1.6;
+  }
+  .term .tx{color:#ffd27a}
+  .term .rx{color:#8ff0bd}
+  .term .sys{color:#7e8ec9}
+
+  /* modal */
+  .modal-back{position:fixed;inset:0;background:rgba(20,26,56,.5);backdrop-filter:blur(3px);display:none;place-items:center;z-index:80;padding:20px}
+  .modal-back.show{display:grid}
+  .modal{background:#fff;border:2px solid var(--ink);border-radius:18px;box-shadow:8px 8px 0 var(--ink);max-width:420px;width:100%;padding:22px;animation:pop .18s ease}
+  @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h3{font-size:20px;margin-bottom:4px}
+  .modal p{color:var(--ink-soft);font-weight:600;margin:0 0 16px;font-size:14px}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .err{color:var(--coral);font-weight:800;font-size:13px;min-height:18px;margin-top:8px}
+  .hint{font-size:12.5px;color:var(--ink-soft);font-weight:600;line-height:1.5}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;font-family:'Fredoka';font-weight:600;font-size:14px;
+    padding:11px 18px;border-radius:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;
+    transition:.25s;z-index:90;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .seg{display:flex;gap:8px;margin-top:8px}
+  .seg button{flex:1;border:2px solid var(--line);border-radius:11px;padding:9px;font-weight:600;font-size:13.5px;background:#fff;color:var(--ink-soft)}
+  .seg button.sel{border-color:var(--ink);background:var(--ink);color:#fff}
+  .hide{display:none!important}
+  .loading-banner{display:flex;align-items:center;gap:10px;background:#fff8e6;border:2px solid var(--amber);border-radius:12px;padding:11px 14px;font-weight:700;font-size:13.5px;margin-bottom:14px}
+  .loading-banner .spin{width:16px;height:16px;border:3px solid #e7e2d6;border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite}
+
+  /* ===================== RESPONSIVE ===================== */
+  html,body{max-width:100%;overflow-x:hidden}
+  img{max-width:100%}
+
+  /* tablet */
+  @media(max-width:880px){
+    .tabs{margin-top:14px}
+    .tab{flex:1 1 auto;justify-content:center;font-size:15px;padding:11px 14px}
+    .readout .verdict{font-size:26px}
+  }
+
+  /* large phone */
+  @media(max-width:600px){
+    .bar{padding:10px 14px;gap:12px}
+    .brand .txt .school{font-size:14.5px}
+    main{padding:14px 14px 48px}
+    .tabs{padding:0 14px;gap:8px}
+    .tab{font-size:14px;padding:10px 12px;border-radius:12px;box-shadow:4px 4px 0 var(--ink)}
+    .tab .tg{font-size:16px}
+    .card .head{padding:12px 14px}
+    .card .head h3{font-size:16px}
+    .card .body{padding:14px}
+    .grid{gap:14px}
+    .cam-controls .btn{flex:1 1 100%}
+    #captureBtn{font-size:15px!important}
+    .readout .verdict{font-size:23px}
+    .modal{padding:18px}
+    .modal .actions{flex-wrap:wrap}
+    .modal .actions .btn{flex:1 1 auto}
+    .seg{flex-direction:column}
+    .term{font-size:11.5px;max-height:170px}
+    .nav-right .btn-connect,.nav-right .btn-admin{flex:1 1 auto}
+  }
+
+  /* small phone */
+  @media(max-width:380px){
+    .brand .fallback{height:42px;width:42px;font-size:18px}
+    header img,.brand img{height:42px!important;max-height:42px}
+    .brand .txt .school{font-size:13.5px}
+    .tab{font-size:13px}
+    .readout .verdict{font-size:20px}
+    .anglebox{min-width:46px;font-size:12px}
+  }
+
+  /* coarse-pointer / reduced-motion niceties */
+  @media(hover:none){
+    .btn:hover,.tab:hover{transform:none}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+  }
+
+  /* ---------- footer ---------- */
+  .site-footer{
+    border-top:2px solid var(--ink);
+    background:var(--ink);
+    color:#fff;margin-top:20px;
+  }
+  .foot-inner{
+    max-width:1180px;margin:0 auto;padding:22px 20px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
+  }
+  .foot-main{font-family:'Fredoka';font-weight:500;font-size:15px}
+  .foot-main b{color:var(--amber)}
+  .foot-sub{font-family:'Nunito';font-weight:700;font-size:12.5px;color:#b9c0e0;letter-spacing:.02em}
+  @media(max-width:600px){
+    .foot-inner{padding:18px 16px}
+    .foot-main{font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <!-- LEFT: school brand -->
+  <div class="nav-brand">
+    <!-- Replace the .logo-badge div with your image when ready:
+         <img class="logo-img" src="cognospace-logo.png" alt="CognoSpace"> -->
+    <div class="logo-badge">P</div>
+    <div class="school-txt">
+      <div class="sname">Pallavi International School, Gandipet</div>
+      <div class="spow">Powered by <b>CognoSpace</b></div>
+    </div>
+  </div>
+
+  <!-- CENTER: app title -->
+  <div class="nav-center">
+    <span class="app-title">🐾 Animal Detection</span>
+    <span class="app-sub">Crossing Safety System</span>
+  </div>
+
+  <!-- RIGHT: status + connect + admin -->
+  <div class="nav-right">
+    <span class="stat-pill" id="serialPill">
+      <span class="dot"></span>
+      <span id="serialPillText">ESP32 not connected</span>
+    </span>
+    <button class="btn-connect" id="connectBtn">Connect ESP32</button>
+    <span class="nav-sep"></span>
+    <button class="btn-admin" id="adminNavBtn">⚙ Admin <span id="adminLockIcon">🔒</span></button>
+  </div>
+</nav>
+
+<div class="tabs">
+  <button class="tab training active" data-mode="training"><span class="tg">🎓</span> Training mode</button>
+  <button class="tab live" data-mode="live"><span class="tg">📡</span> Live mode</button>
+</div>
+
+<main>
+  <div id="modelBanner" class="loading-banner"><span class="spin"></span> Loading the vision model… this runs once and stays in your browser.</div>
+
+  <!-- ===================== TRAINING ===================== -->
+  <section id="view-training">
+    <div class="grid">
+      <!-- camera -->
+      <div class="card">
+        <div class="head"><span class="eyebrow">Step 1</span><h3>Show an animal to the camera</h3></div>
+        <div class="body">
+          <div class="stage" id="stageTrain">
+            <span class="live-badge" id="trainBadge"><span class="b"></span> Capturing</span>
+            <div class="empty" id="stageTrainEmpty">Turn on the camera or upload a photo to begin.</div>
+          </div>
+          <div class="cam-controls">
+            <button class="btn ink" id="camToggleTrain">Start camera</button>
+            <button class="btn ghost" id="camSwitchTrain" disabled>↺ Switch camera</button>
+            <button class="btn ghost" id="uploadBtnTrain">Upload image</button>
+            <input type="file" id="fileTrain" accept="image/*" class="hide" />
+          </div>
+          <div class="divider"></div>
+          <button class="btn coral" id="captureBtn" style="width:100%;font-size:16px;padding:13px" disabled>Capture & analyse</button>
+          <p class="hint" style="margin:10px 0 0">Each capture is resized, run through the vision model, and turned into 7 training samples automatically.</p>
+        </div>
+      </div>
+
+      <!-- pipeline + classes -->
+      <div>
+        <div class="card">
+          <div class="head"><span class="eyebrow">Step 2</span><h3>Analysis pipeline</h3></div>
+          <div class="body">
+            <div class="pipe" id="pipe">
+              <div class="step" data-step="0"><div class="num">1</div><div><div class="label">Capture frame</div><div class="sub">Grab the image from camera / upload</div></div><div class="spin"></div></div>
+              <div class="step" data-step="1"><div class="num">2</div><div><div class="label">Resize to 224×224</div><div class="sub">Standard input size for the model</div></div><div class="spin"></div></div>
+              <div class="step" data-step="2"><div class="num">3</div><div><div class="label">Extract features</div><div class="sub">MobileNet reads shapes, colours, textures</div></div><div class="spin"></div></div>
+              <div class="step" data-step="3"><div class="num">4</div><div><div class="label">Augment data</div><div class="sub">Make 7 variations (flip, zoom, brightness)</div></div><div class="spin"></div></div>
+              <div class="step" data-step="4"><div class="num">5</div><div><div class="label">Add to dataset</div><div class="sub">Store samples, then name the animal</div></div><div class="spin"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Trained animals</h3><span class="spacer"></span><span class="tag ink" id="totalSamples">0 samples</span></div>
+          <div class="body">
+            <div class="classlist" id="classList">
+              <div class="empty-hint">No animals trained yet. Tip: also train an<br><b>“Empty road”</b> class so the system knows when it’s safe.</div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn ghost" id="resetTrain" style="width:100%">Clear all training</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE ===================== -->
+  <section id="view-live" class="hide">
+    <div class="grid">
+      <div class="card">
+        <div class="head"><span class="eyebrow">Watching the road</span><h3>Live camera</h3></div>
+        <div class="body">
+          <div class="stage" id="stageLive">
+            <span class="live-badge show" id="liveBadge"><span class="b"></span> LIVE</span>
+            <div class="empty" id="stageLiveEmpty">Start the camera to begin detecting.</div>
+          </div>
+          <div class="cam-controls">
+            <button class="btn ink" id="camToggleLive">Start camera</button>
+            <button class="btn ghost" id="camSwitchLive" disabled>↺ Switch camera</button>
+          </div>
+          <div class="divider"></div>
+          <div class="field" style="margin-bottom:0">
+            <label>Detection sensitivity <span class="hint" id="threshLabel" style="float:right">70%</span></label>
+            <input type="range" id="thresh" min="40" max="95" value="70" />
+            <p class="hint" style="margin:8px 0 0">An animal must be recognised above this confidence before the gates close.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h3>Detection</h3><span class="spacer"></span><span class="tag green" id="liveSerialTag">offline</span></div>
+        <div class="body">
+          <div class="readout">
+            <div class="verdict safe" id="verdict">Road clear</div>
+            <div class="conf" id="verdictSub">Camera off</div>
+            <div class="barwrap"><div class="bar" id="confBar"></div></div>
+          </div>
+
+          <div class="diorama">
+            <svg class="road-svg" viewBox="0 0 400 180" id="roadSvg" aria-label="road diorama">
+              <!-- grass -->
+              <rect x="0" y="0" width="400" height="180" fill="#bfe3c9"/>
+              <!-- road -->
+              <rect x="0" y="62" width="400" height="56" fill="#3a3f4d"/>
+              <!-- lane dashes -->
+              <g fill="#ffd95e">
+                <rect x="20" y="88" width="26" height="6" rx="3"/>
+                <rect x="74" y="88" width="26" height="6" rx="3"/>
+                <rect x="128" y="88" width="26" height="6" rx="3"/>
+                <rect x="182" y="88" width="26" height="6" rx="3"/>
+                <rect x="236" y="88" width="26" height="6" rx="3"/>
+                <rect x="290" y="88" width="26" height="6" rx="3"/>
+                <rect x="344" y="88" width="26" height="6" rx="3"/>
+              </g>
+              <!-- animal -->
+              <g id="animalIcon" opacity="0" transform="translate(200,40)">
+                <text x="0" y="0" font-size="30" text-anchor="middle">🦌</text>
+              </g>
+              <!-- start gate (left) -->
+              <g id="gateA">
+                <rect x="44" y="34" width="6" height="84" fill="#cdd2da"/>
+                <g id="gateArmA" transform="rotate(0,47,40)">
+                  <rect x="47" y="37" width="70" height="7" rx="3" fill="#F96167"/>
+                  <rect x="47" y="37" width="70" height="7" rx="3" fill="url(#stripeA)" opacity=".5"/>
+                </g>
+                <text x="47" y="150" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">START</text>
+              </g>
+              <!-- end gate (right) -->
+              <g id="gateB">
+                <rect x="350" y="34" width="6" height="84" fill="#cdd2da"/>
+                <g id="gateArmB" transform="rotate(0,353,40)">
+                  <rect x="283" y="37" width="70" height="7" rx="3" fill="#F96167"/>
+                </g>
+                <text x="353" y="150" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">END</text>
+              </g>
+              <!-- buzzer + led -->
+              <g id="alarm" opacity="0">
+                <circle id="ledDot" cx="200" cy="150" r="8" fill="#F96167"/>
+                <text x="216" y="154" font-size="10" fill="#1F2A52" font-family="Nunito" font-weight="800">🔔 BUZZER</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i style="background:#F96167"></i>Gate closed</span>
+              <span><i style="background:#2E7D55"></i>Gate open</span>
+              <span><i style="background:#FFC233"></i>Animal on road</span>
+            </div>
+          </div>
+          <p class="hint" id="liveOfflineHint" style="margin:14px 0 0">Connect the ESP32 to drive the real servos, buzzer and LED.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ADMIN ===================== -->
+  <section id="view-admin" class="hide">
+    <div class="card" id="adminLocked">
+      <div class="lockwall">
+        <div class="ico">🔒</div>
+        <h3>Admin mode is locked</h3>
+        <p>Enter the admin password to configure the hardware.</p>
+        <button class="btn ink" id="unlockBtn">Enter password</button>
+      </div>
+    </div>
+
+    <div class="grid hide" id="adminPanel">
+      <div class="card">
+        <div class="head"><span class="eyebrow">Servo calibration</span><h3>Gate angles</h3></div>
+        <div class="body">
+          <p class="hint" style="margin-top:0">Set the open and closed angle for each gate servo. Values are sent to the ESP32 and saved on the board.</p>
+          <div class="divider"></div>
+          <h4 style="margin-bottom:12px;color:var(--coral)">Servo A · Road start</h4>
+          <div class="field"><label>Open angle <span class="anglebox" id="vAopen" style="float:right">10°</span></label><div class="row"><input type="range" id="Aopen" min="0" max="180" value="10"></div></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vAclose" style="float:right">90°</span></label><div class="row"><input type="range" id="Aclose" min="0" max="180" value="90"></div></div>
+          <div class="divider"></div>
+          <h4 style="margin-bottom:12px;color:var(--coral)">Servo B · Road end</h4>
+          <div class="field"><label>Open angle <span class="anglebox" id="vBopen" style="float:right">10°</span></label><div class="row"><input type="range" id="Bopen" min="0" max="180" value="10"></div></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vBclose" style="float:right">90°</span></label><div class="row"><input type="range" id="Bclose" min="0" max="180" value="90"></div></div>
+          <div class="divider"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn coral" id="sendAngles" style="flex:1">Save angles to ESP32</button>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn ghost" id="testOpen" style="flex:1">Test open</button>
+            <button class="btn ghost" id="testClose" style="flex:1">Test close</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><span class="eyebrow">Display</span><h3>LCD 20×4 message</h3></div>
+        <div class="body">
+          <p class="hint" style="margin-top:0">Send any text to the I²C 20×4 LCD on the board. Up to 4 lines, 20 characters each.</p>
+          <div class="divider"></div>
+          <div class="field"><label>Message</label><input type="text" id="lcdLine1" maxlength="20" placeholder="Line 1 (max 20 chars)"></div>
+          <div class="field"><input type="text" id="lcdLine2" maxlength="20" placeholder="Line 2"></div>
+          <div class="field"><input type="text" id="lcdLine3" maxlength="20" placeholder="Line 3"></div>
+          <div class="field"><input type="text" id="lcdLine4" maxlength="20" placeholder="Line 4"></div>
+          <button class="btn coral" id="sendLcd" style="width:100%">Send to LCD</button>
+          <div class="divider"></div>
+          <h4 style="margin-bottom:10px">Quick actions</h4>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn ghost" id="lcdClear" style="flex:1">Clear LCD</button>
+            <button class="btn ghost" id="silence" style="flex:1">Silence buzzer</button>
+          </div>
+          <button class="btn ink" id="logoutAdmin" style="width:100%;margin-top:14px">Lock admin mode</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- serial console -->
+  <div class="card console">
+    <div class="head"><h3>Serial console</h3><span class="spacer"></span><button class="btn sm ghost" id="clearTerm">Clear</button></div>
+    <div class="body">
+      <div class="term" id="term"><div class="sys">// Connect the ESP32 to see serial traffic here.</div></div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="foot-inner">
+    <div class="foot-main">Designed &amp; developed by <b>CognoSpace</b></div>
+    <div class="foot-sub">for Pallavi International School · Gandipet</div>
+  </div>
+</footer>
+
+<!-- name modal -->
+<div class="modal-back" id="nameModal">
+  <div class="modal">
+    <h3>Name this animal</h3>
+    <p>The 7 samples will be added to this class.</p>
+    <input type="text" id="animalName" placeholder="e.g. Tiger, Deer, Empty road" maxlength="22" />
+    <div class="seg">
+      <button id="kindAnimal" class="sel">🐾 Animal · triggers gates</button>
+      <button id="kindSafe">✅ Safe · no action</button>
+    </div>
+    <div class="err" id="nameErr"></div>
+    <div class="actions">
+      <button class="btn ghost" id="cancelName">Cancel</button>
+      <button class="btn coral" id="confirmName">Add samples</button>
+    </div>
+  </div>
+</div>
+
+<!-- password modal -->
+<div class="modal-back" id="pwModal">
+  <div class="modal">
+    <h3>Admin password</h3>
+    <p>Restricted area — hardware configuration.</p>
+    <input type="password" id="pwInput" placeholder="Enter password" />
+    <div class="err" id="pwErr"></div>
+    <div class="actions">
+      <button class="btn ghost" id="cancelPw">Cancel</button>
+      <button class="btn ink" id="submitPw">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   WildGuard — Animal Crossing Detection
+   Pallavi International School, Gandipet · Powered by CognoSpace
+   ========================================================================= */
+
+const ADMIN_PASSWORD = "12345678";
+
+/* ---------- tiny helpers ---------- */
+const $ = id => document.getElementById(id);
+const toast = (() => {
+  const el = $('toast'); let t;
+  return msg => { el.textContent = msg; el.classList.add('show'); clearTimeout(t); t = setTimeout(()=>el.classList.remove('show'),2200); };
+})();
+
+/* ===================================================================
+   SERIAL  (Web Serial API)
+   =================================================================== */
+const Serial = {
+  port:null, writer:null, reader:null, connected:false, lineBuf:"",
+  supported(){ return 'serial' in navigator; },
+  log(text, cls='sys'){
+    const term = $('term');
+    const div = document.createElement('div');
+    div.className = cls; div.textContent = text;
+    term.appendChild(div); term.scrollTop = term.scrollHeight;
+  },
+  async connect(){
+    if(!this.supported()){
+      toast("Web Serial not supported — use Chrome or Edge over https/localhost.");
+      this.log("// Web Serial unavailable in this browser.", 'sys'); return;
+    }
+    try{
+      this.port = await navigator.serial.requestPort();      // <- COM port picker pops up here
+      await this.port.open({ baudRate: 115200 });
+      this.writer = this.port.writable.getWriter();
+      this.connected = true;
+      this.updateUI();
+      this.log("// Connected at 115200 baud.", 'sys');
+      this.readLoop();
+      // push current admin config so the board matches the UI
+      Admin.pushAngles(true);
+    }catch(err){
+      this.log("// Connection cancelled or failed: "+err.message, 'sys');
+    }
+  },
+  async readLoop(){
+    const decoder = new TextDecoderStream();
+    this.port.readable.pipeTo(decoder.writable).catch(()=>{});
+    this.reader = decoder.readable.getReader();
+    try{
+      while(true){
+        const {value, done} = await this.reader.read();
+        if(done) break;
+        this.lineBuf += value;
+        let i;
+        while((i = this.lineBuf.indexOf("\n")) >= 0){
+          const line = this.lineBuf.slice(0,i).trim();
+          this.lineBuf = this.lineBuf.slice(i+1);
+          if(line) this.log("← "+line, 'rx');
+        }
+      }
+    }catch(e){ /* port closed */ }
+    this.disconnect(true);
+  },
+  async send(cmd){
+    if(!this.connected || !this.writer){ this.log("→ "+cmd+"  (not sent — offline)", 'sys'); return; }
+    const data = new TextEncoder().encode(cmd + "\n");
+    try{ await this.writer.write(data); this.log("→ "+cmd, 'tx'); }
+    catch(e){ this.log("// write failed: "+e.message,'sys'); }
+  },
+  async disconnect(silent){
+    try{ if(this.reader){ await this.reader.cancel(); this.reader=null; } }catch(e){}
+    try{ if(this.writer){ this.writer.releaseLock(); this.writer=null; } }catch(e){}
+    try{ if(this.port){ await this.port.close(); } }catch(e){}
+    this.port=null; this.connected=false; this.updateUI();
+    if(!silent) this.log("// Disconnected.", 'sys');
+  },
+  updateUI(){
+    const pill=$('serialPill'), txt=$('serialPillText'), btn=$('connectBtn');
+    if(this.connected){
+      pill.classList.add('on'); txt.textContent="ESP32 connected";
+      btn.textContent="Disconnect"; btn.classList.add('disc');
+      $('liveSerialTag').textContent="online"; $('liveSerialTag').className="tag green";
+      $('liveOfflineHint').classList.add('hide');
+    }else{
+      pill.classList.remove('on'); txt.textContent="ESP32 not connected";
+      btn.textContent="Connect ESP32"; btn.classList.remove('disc');
+      $('liveSerialTag').textContent="offline"; $('liveSerialTag').className="tag ink";
+      $('liveOfflineHint').classList.remove('hide');
+    }
+  }
+};
+$('connectBtn').onclick = () => Serial.connected ? Serial.disconnect() : Serial.connect();
+$('clearTerm').onclick = () => { $('term').innerHTML=''; Serial.log("// cleared", 'sys'); };
+
+/* ===================================================================
+   CAMERA  (shared between training & live, with switch-camera)
+   =================================================================== */
+const Camera = {
+  stream:null, video:null, devices:[], curIndex:0, facing:'environment', owner:null,
+  async listDevices(){
+    try{
+      const all = await navigator.mediaDevices.enumerateDevices();
+      this.devices = all.filter(d=>d.kind==='videoinput');
+    }catch(e){ this.devices=[]; }
+  },
+  async start(owner){
+    this.owner = owner;
+    await this.listDevices();
+    const constraints = this.devices.length
+      ? { video: { deviceId: { exact: this.devices[this.curIndex % this.devices.length].deviceId } } }
+      : { video: { facingMode: this.facing } };
+    try{
+      this.stop(false);
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+    }catch(e){
+      // fallback to facingMode
+      try{ this.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:this.facing}}); }
+      catch(e2){ toast("Could not open camera: "+e2.message); return false; }
+    }
+    await this.listDevices(); // labels available after permission
+    this.attach(owner);
+    return true;
+  },
+  attach(owner){
+    const stageId = owner==='train' ? 'stageTrain' : 'stageLive';
+    const stage = $(stageId);
+    let v = stage.querySelector('video');
+    if(!v){
+      v = document.createElement('video');
+      v.autoplay=true; v.playsInline=true; v.muted=true;
+      stage.insertBefore(v, stage.firstChild);
+    }
+    v.srcObject = this.stream; this.video = v;
+    const emptyEl = $(stageId+'Empty'); if(emptyEl) emptyEl.style.display='none';
+    const old = stage.querySelector('img.shot'); if(old) old.remove();
+  },
+  async switch(){
+    if(this.devices.length > 1){
+      this.curIndex = (this.curIndex + 1) % this.devices.length;
+    }else{
+      this.facing = this.facing==='environment' ? 'user' : 'environment';
+    }
+    await this.start(this.owner);
+    toast("Camera switched");
+  },
+  stop(clearUI=true){
+    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+    if(clearUI && this.video){ this.video.srcObject=null; }
+  },
+  isOn(){ return !!this.stream; },
+  grabCanvas(size=224){
+    const c = document.createElement('canvas'); c.width=size; c.height=size;
+    const ctx = c.getContext('2d');
+    const src = this.video;
+    const sw = src.videoWidth, sh = src.videoHeight, m = Math.min(sw,sh);
+    ctx.drawImage(src,(sw-m)/2,(sh-m)/2,m,m,0,0,size,size);
+    return c;
+  }
+};
+
+/* training camera buttons */
+$('camToggleTrain').onclick = async ()=>{
+  if(Camera.isOn() && Camera.owner==='train'){
+    Camera.stop(); $('stageTrainEmpty').style.display='grid';
+    $('camToggleTrain').textContent='Start camera'; $('camSwitchTrain').disabled=true; $('captureBtn').disabled=true;
+  }else{
+    const ok = await Camera.start('train');
+    if(ok){ $('camToggleTrain').textContent='Stop camera'; $('camSwitchTrain').disabled=false; $('captureBtn').disabled = !Model.ready; }
+  }
+};
+$('camSwitchTrain').onclick = ()=>Camera.switch();
+$('uploadBtnTrain').onclick = ()=>$('fileTrain').click();
+$('fileTrain').onchange = e=>{ if(e.target.files[0]) loadUpload(e.target.files[0]); };
+
+/* live camera buttons */
+$('camToggleLive').onclick = async ()=>{
+  if(Camera.isOn() && Camera.owner==='live'){
+    Live.stop(); $('stageLiveEmpty').style.display='grid';
+    $('camToggleLive').textContent='Start camera'; $('camSwitchLive').disabled=true;
+  }else{
+    const ok = await Camera.start('live');
+    if(ok){ $('camToggleLive').textContent='Stop camera'; $('camSwitchLive').disabled=false; Live.start(); }
+  }
+};
+$('camSwitchLive').onclick = ()=>Camera.switch();
+
+/* ===================================================================
+   MODEL  (MobileNet feature extractor + KNN classifier)
+   =================================================================== */
+const Model = {
+  net:null, knn:null, ready:false,
+  meta:{},       // className -> {kind:'animal'|'safe', thumb:dataURL, count:n}
+  async load(){
+    this.knn = knnClassifier.create();
+    this.net = await mobilenet.load({version:2, alpha:1.0});
+    this.ready = true;
+    $('modelBanner').classList.add('hide');
+    if(Camera.isOn() && Camera.owner==='train') $('captureBtn').disabled=false;
+    toast("Vision model ready");
+  },
+  embed(canvasOrImg){
+    return tf.tidy(()=> this.net.infer(tf.browser.fromPixels(canvasOrImg), true));
+  },
+  addExample(canvas, className){
+    const emb = this.embed(canvas);
+    this.knn.addExample(emb, className);
+    emb.dispose();
+  },
+  async classify(canvas){
+    if(this.knn.getNumClasses()===0) return null;
+    const emb = this.embed(canvas);
+    const res = await this.knn.predictClass(emb, 5);
+    emb.dispose();
+    return res; // {label, confidences}
+  },
+  classCounts(){ return this.knn.getClassExampleCount ? this.knn.getClassExampleCount() : {}; }
+};
+
+/* ===================================================================
+   TRAINING — pipeline animation, augmentation, naming
+   =================================================================== */
+let pendingCanvas = null;     // square 224 canvas waiting to be named
+let pendingThumb = null;      // dataURL preview
+let pendingKind = 'animal';
+
+function setStep(i, state){
+  const step = document.querySelector(`.step[data-step="${i}"]`);
+  if(!step) return;
+  step.classList.remove('active','done');
+  if(state) step.classList.add(state);
+}
+function resetPipe(){ for(let i=0;i<5;i++) setStep(i,null); }
+
+async function runPipeline(canvas){
+  resetPipe();
+  const delays = [350,350,650,550,400];
+  for(let i=0;i<5;i++){
+    setStep(i,'active');
+    await new Promise(r=>setTimeout(r,delays[i]));
+    setStep(i,'done');
+  }
+}
+
+function captureCommon(canvas, thumbDataURL){
+  pendingCanvas = canvas;
+  pendingThumb = thumbDataURL;
+  pendingKind = 'animal';
+  $('kindAnimal').classList.add('sel'); $('kindSafe').classList.remove('sel');
+  $('animalName').value=''; $('nameErr').textContent='';
+  $('nameModal').classList.add('show');
+  setTimeout(()=>$('animalName').focus(),50);
+}
+
+$('captureBtn').onclick = async ()=>{
+  if(!Model.ready || !Camera.isOn()){ toast("Start the camera first"); return; }
+  $('captureBtn').disabled=true; $('trainBadge').classList.add('show');
+  const canvas = Camera.grabCanvas(224);
+  await runPipeline(canvas);
+  $('trainBadge').classList.remove('show'); $('captureBtn').disabled=false;
+  captureCommon(canvas, canvas.toDataURL('image/jpeg',0.7));
+};
+
+function loadUpload(file){
+  if(!Model.ready){ toast("Model still loading…"); return; }
+  const img = new Image();
+  img.onload = async ()=>{
+    const c=document.createElement('canvas'); c.width=224;c.height=224;
+    const ctx=c.getContext('2d'); const m=Math.min(img.width,img.height);
+    ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,224,224);
+    // preview in the training stage
+    const stage=$('stageTrain'); const old=stage.querySelector('img.shot'); if(old) old.remove();
+    if(!Camera.isOn()){
+      const prev=document.createElement('img'); prev.className='shot'; prev.src=c.toDataURL();
+      stage.insertBefore(prev, stage.firstChild); $('stageTrainEmpty').style.display='none';
+    }
+    await runPipeline(c);
+    captureCommon(c, c.toDataURL('image/jpeg',0.7));
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+/* augmentation — make 7 varied samples from one capture */
+function augment(srcCanvas){
+  const variants=[srcCanvas];
+  const ops=[
+    {flip:true,zoom:1.0,bright:1.0},
+    {flip:false,zoom:1.12,bright:1.0},
+    {flip:true,zoom:1.12,bright:1.0},
+    {flip:false,zoom:1.0,bright:1.15},
+    {flip:false,zoom:1.0,bright:0.85},
+    {flip:true,zoom:1.06,bright:1.1},
+  ];
+  for(const op of ops){
+    const c=document.createElement('canvas'); c.width=224;c.height=224;
+    const ctx=c.getContext('2d');
+    ctx.filter=`brightness(${op.bright})`;
+    const z=op.zoom, w=224*z, h=224*z, ox=(224-w)/2, oy=(224-h)/2;
+    if(op.flip){ ctx.translate(224,0); ctx.scale(-1,1); }
+    ctx.drawImage(srcCanvas, ox, oy, w, h);
+    variants.push(c);
+  }
+  return variants; // 7 total
+}
+
+/* name modal */
+$('kindAnimal').onclick=()=>{ pendingKind='animal'; $('kindAnimal').classList.add('sel'); $('kindSafe').classList.remove('sel'); };
+$('kindSafe').onclick=()=>{ pendingKind='safe'; $('kindSafe').classList.add('sel'); $('kindAnimal').classList.remove('sel'); };
+$('cancelName').onclick=()=>{ $('nameModal').classList.remove('show'); pendingCanvas=null; };
+$('confirmName').onclick=()=>{
+  const name=$('animalName').value.trim();
+  if(!name){ $('nameErr').textContent="Please enter a name."; return; }
+  if(!pendingCanvas){ $('nameModal').classList.remove('show'); return; }
+  const variants=augment(pendingCanvas);
+  variants.forEach(v=>Model.addExample(v, name));
+  if(!Model.meta[name]) Model.meta[name]={kind:pendingKind, thumb:pendingThumb, count:0};
+  Model.meta[name].kind = pendingKind;             // allow re-class on retrain
+  Model.meta[name].count += variants.length;
+  if(pendingThumb) Model.meta[name].thumb = pendingThumb;
+  $('nameModal').classList.remove('show');
+  renderClasses();
+  toast(`Added ${variants.length} samples to “${name}”`);
+};
+
+function renderClasses(){
+  const counts = Model.classCounts();
+  const list=$('classList'); list.innerHTML='';
+  const names=Object.keys(counts);
+  if(names.length===0){
+    list.innerHTML='<div class="empty-hint">No animals trained yet. Tip: also train an<br><b>“Empty road”</b> class so the system knows when it’s safe.</div>';
+    $('totalSamples').textContent='0 samples'; return;
+  }
+  let total=0;
+  names.forEach(n=>{
+    total+=counts[n];
+    const meta=Model.meta[n]||{kind:'animal',thumb:null};
+    const row=document.createElement('div'); row.className='class-row';
+    const kindTag = meta.kind==='safe'
+      ? '<span class="tag green" style="font-size:9px">SAFE</span>'
+      : '<span class="tag amber" style="font-size:9px">ANIMAL</span>';
+    row.innerHTML=`
+      <img class="swatch" src="${meta.thumb||''}" alt="">
+      <div class="meta"><div class="name">${escapeHtml(n)} ${kindTag}</div><div class="count">${counts[n]} samples</div></div>
+      <button class="btn sm ghost" data-del="${escapeHtml(n)}">Remove</button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick=()=>{ Model.knn.clearClass(b.dataset.del); delete Model.meta[b.dataset.del]; renderClasses(); };
+  });
+  $('totalSamples').textContent = total+' samples';
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+$('resetTrain').onclick=()=>{
+  if(Model.knn){ Model.knn.clearAllClasses(); }
+  Model.meta={}; renderClasses(); toast("All training cleared");
+};
+
+/* ===================================================================
+   LIVE — continuous detection + serial commands + diorama
+   =================================================================== */
+const Live = {
+  running:false, raf:null, state:'clear', lastSentAt:0,
+  start(){
+    if(this.running) return;
+    if(Model.knn.getNumClasses()===0){ toast("Train at least one animal first"); }
+    this.running=true; this.loop();
+  },
+  stop(){
+    this.running=false;
+    if(this.raf) clearTimeout(this.raf);
+    Camera.stop();
+    this.setVerdict('clear', 'Camera off', 0);
+  },
+  async loop(){
+    if(!this.running || !Camera.isOn()){ return; }
+    if(Model.ready && Model.knn.getNumClasses()>0){
+      const canvas = Camera.grabCanvas(224);
+      try{
+        const res = await Model.classify(canvas);
+        if(res){
+          const label=res.label;
+          const conf=Math.round((res.confidences[label]||0)*100);
+          const thresh=parseInt($('thresh').value,10);
+          const meta=Model.meta[label]||{kind:'animal'};
+          const isAnimal = meta.kind!=='safe';
+          if(isAnimal && conf>=thresh){
+            this.trigger(label, conf);
+          }else{
+            this.clear(label, conf);
+          }
+        }
+      }catch(e){ /* skip frame */ }
+    }
+    this.raf=setTimeout(()=>this.loop(), 400);
+  },
+  trigger(name, conf){
+    this.setVerdict('danger', name, conf);
+    this.setDiorama(true, name);
+    if(this.state!=='danger'){
+      this.state='danger';
+      Serial.send('DETECT:'+name);
+    }
+  },
+  clear(label, conf){
+    this.setVerdict('clear', label==='__'?'—':label, conf);
+    this.setDiorama(false);
+    if(this.state!=='clear'){
+      this.state='clear';
+      Serial.send('CLEAR');
+    }
+  },
+  setVerdict(kind, label, conf){
+    const v=$('verdict'), sub=$('verdictSub'), bar=$('confBar');
+    if(kind==='danger'){
+      v.textContent='⚠ '+label+' detected'; v.className='verdict danger';
+      sub.textContent='Gates closing · buzzer + LED on';
+      bar.style.background='var(--coral)';
+    }else{
+      v.textContent='Road clear'; v.className='verdict safe';
+      sub.textContent = label && label!=='—' ? `Seeing: ${label}` : 'Watching…';
+      bar.style.background='var(--forest)';
+    }
+    bar.style.width = Math.max(0,Math.min(100,conf))+'%';
+  },
+  setDiorama(detected, name){
+    const armA=$('gateArmA'), armB=$('gateArmB'), animal=$('animalIcon'), alarm=$('alarm');
+    if(detected){
+      armA.setAttribute('transform','rotate(0,47,40)');     // horizontal = closed
+      armB.setAttribute('transform','rotate(0,353,40)');
+      armA.querySelector('rect').setAttribute('fill','#F96167');
+      armB.querySelector('rect').setAttribute('fill','#F96167');
+      animal.setAttribute('opacity','1');
+      alarm.setAttribute('opacity','1');
+    }else{
+      armA.setAttribute('transform','rotate(-75,47,40)');   // lifted = open
+      armB.setAttribute('transform','rotate(75,353,40)');
+      armA.querySelector('rect').setAttribute('fill','#2E7D55');
+      armB.querySelector('rect').setAttribute('fill','#2E7D55');
+      animal.setAttribute('opacity','0');
+      alarm.setAttribute('opacity','0');
+    }
+  }
+};
+/* LED blink animation in the diorama while detected */
+setInterval(()=>{
+  const led=$('ledDot');
+  if($('alarm').getAttribute('opacity')==='1'){
+    led.setAttribute('opacity', led.getAttribute('opacity')==='0.2'?'1':'0.2');
+  }
+},250);
+
+$('thresh').oninput=e=>{ $('threshLabel').textContent=e.target.value+'%'; };
+
+/* ===================================================================
+   ADMIN — password gate, servo angles, LCD
+   =================================================================== */
+const Admin = {
+  unlocked:false,
+  open(){
+    if(this.unlocked){ this.show(); return; }
+    $('pwInput').value=''; $('pwErr').textContent='';
+    $('pwModal').classList.add('show');
+    setTimeout(()=>$('pwInput').focus(),50);
+  },
+  tryUnlock(){
+    if($('pwInput').value===ADMIN_PASSWORD){
+      this.unlocked=true; $('pwModal').classList.remove('show'); this.show();
+      $('adminNavBtn').classList.add('unlocked-mode'); $('adminLockIcon').textContent='🔓';
+      toast("Admin unlocked");
+    }else{ $('pwErr').textContent="Wrong password."; }
+  },
+  show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); },
+  hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); },
+  lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked-mode','active-mode'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
+  angles(){
+    return {
+      Aopen:+$('Aopen').value, Aclose:+$('Aclose').value,
+      Bopen:+$('Bopen').value, Bclose:+$('Bclose').value
+    };
+  },
+  pushAngles(quiet){
+    const a=this.angles();
+    Serial.send(`CFG:${a.Aopen},${a.Aclose},${a.Bopen},${a.Bclose}`);
+    if(!quiet) toast("Angles sent to ESP32");
+  }
+};
+$('unlockBtn').onclick=()=>Admin.open();
+$('submitPw').onclick=()=>Admin.tryUnlock();
+$('pwInput').addEventListener('keydown',e=>{ if(e.key==='Enter') Admin.tryUnlock(); });
+$('cancelPw').onclick=()=>$('pwModal').classList.remove('show');
+$('logoutAdmin').onclick=()=>Admin.lock();
+
+['Aopen','Aclose','Bopen','Bclose'].forEach(id=>{
+  $(id).oninput=e=>{ $('v'+id).textContent=e.target.value+'°'; };
+});
+$('sendAngles').onclick=()=>Admin.pushAngles(false);
+$('testOpen').onclick=()=>Serial.send('GATE:OPEN');
+$('testClose').onclick=()=>Serial.send('GATE:CLOSE');
+$('sendLcd').onclick=()=>{
+  const l1=$('lcdLine1').value, l2=$('lcdLine2').value, l3=$('lcdLine3').value, l4=$('lcdLine4').value;
+  Serial.send(`LCD:${l1}|${l2}|${l3}|${l4}`);
+  toast("Sent to LCD");
+};
+$('lcdClear').onclick=()=>Serial.send('LCD:||||');
+$('silence').onclick=()=>Serial.send('CLEAR');
+
+/* ===================================================================
+   MODE SWITCHING
+   =================================================================== */
+function switchMode(mode){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mode===mode));
+  ['training','live','admin'].forEach(m=>{
+    $('view-'+m).classList.toggle('hide', m!==mode);
+  });
+  // nav admin button reflects whether the admin view is open
+  $('adminNavBtn').classList.toggle('active-mode', mode==='admin');
+  // leaving live stops the loop; entering admin gates with password
+  if(mode!=='live' && Live.running){ Live.running=false; if(Live.raf) clearTimeout(Live.raf); }
+  if(mode==='live' && Camera.isOn() && Camera.owner==='live'){ Live.start(); }
+  if(mode==='admin'){ Admin.open(); }
+}
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick=()=>switchMode(tab.dataset.mode);
+});
+$('adminNavBtn').onclick=()=>switchMode('admin');
+
+/* close modals on backdrop click */
+['nameModal','pwModal'].forEach(id=>{
+  $(id).addEventListener('click',e=>{ if(e.target.id===id) e.currentTarget.classList.remove('show'); });
+});
+
+/* ===================================================================
+   BOOT
+   =================================================================== */
+window.addEventListener('load', ()=>{
+  if(!Serial.supported()){
+    Serial.log("// Note: this browser doesn't support Web Serial. Use Chrome/Edge on desktop.", 'sys');
+  }
+  Model.load().catch(e=>{
+    $('modelBanner').innerHTML = '⚠ Could not load the vision model. Check your internet connection and refresh.';
+  });
+});
+</script>
+</body>
+</html>
