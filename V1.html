@@ -44,100 +44,87 @@
   button{font-family:'Fredoka',sans-serif;cursor:pointer;border:none;background:none}
   .mono{font-family:'JetBrains Mono',monospace}
 
-  /* =========================================================
-     NAV  — single sticky row, never wraps on desktop
-     ========================================================= */
-  nav.top-nav{
-    position:sticky;top:0;z-index:50;
-    display:flex;align-items:center;justify-content:space-between;
-    gap:14px;
-    padding:12px 26px;
-    background:rgba(255,251,243,.93);
-    backdrop-filter:blur(10px);
-    border-bottom:3px solid var(--ink);
-    box-shadow:0 2px 0 rgba(31,42,82,.06);
+  /* ---------- top bar ---------- */
+  header{
+    position:sticky;top:0;z-index:40;
+    background:#fff;
+    border-bottom:1.5px solid var(--line);
+    box-shadow:0 2px 12px rgba(31,42,82,.06);
   }
-
-  /* ---- left: school brand ---- */
-  .nav-brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
-  /* logo slot — any img stays bounded, fallback badge is used when no image available */
-  .nav-brand .logo-img{height:44px;width:auto;max-width:130px;object-fit:contain;display:block;border-radius:8px}
-  .nav-brand .logo-badge{
-    height:44px;width:44px;border-radius:12px;flex:0 0 auto;
+  .bar{
+    max-width:1180px;margin:0 auto;padding:10px 24px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:0 1 auto}
+  /* Any logo in the header (img OR svg) is hard-capped so it can never stretch the bar.
+     Replace the .fallback div with: <img src="cognospace-logo.png" alt="logo"> */
+  header img, header svg, .brand img, .brand svg{
+    height:44px!important;max-height:44px!important;width:auto!important;max-width:140px!important;
+    object-fit:contain;display:block;flex:0 0 auto;
+  }
+  .brand .fallback{
+    height:44px;width:44px;border-radius:50%;flex:0 0 auto;
     background:var(--ink);color:#fff;display:grid;place-items:center;
     font-family:'Fredoka';font-weight:700;font-size:20px;
-    box-shadow:3px 3px 0 var(--coral);
+    border:2.5px solid var(--ink);
   }
-  .nav-brand .school-txt{line-height:1.2;min-width:0}
-  .nav-brand .school-txt .sname{
-    font-family:'Fredoka';font-weight:600;font-size:14.5px;color:var(--ink);
-    white-space:nowrap;
-  }
-  .nav-brand .school-txt .spow{
-    font-family:'Nunito';font-size:10px;font-weight:800;letter-spacing:.07em;
-    text-transform:uppercase;color:var(--ink-soft);margin-top:1px;
-  }
-  .nav-brand .school-txt .spow b{color:var(--coral)}
+  .brand .txt{line-height:1.2;min-width:0}
+  .brand .txt .school{font-family:'Fredoka';font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand .txt .powered{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--ink-soft);text-transform:uppercase;margin-top:1px}
+  .brand .txt .powered b{color:var(--coral)}
+  .spacer{flex:1 1 0}
 
-  /* ---- center: app title ---- */
-  .nav-center{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1;pointer-events:none}
-  .nav-center .app-title{font-family:'Fredoka';font-weight:700;font-size:22px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
-  .nav-center .app-sub{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+  /* centered app title */
+  .nav-title{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;line-height:1.05}
+  .nav-title .t{font-family:'Fredoka';font-weight:700;font-size:20px;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+  .nav-title .s{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
 
-  /* ---- right: actions ---- */
-  .nav-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
-  .nav-sep{width:2px;height:28px;background:var(--line);border-radius:2px;opacity:.25}
+  /* right-aligned action cluster */
+  .nav-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}
+  .nav-divider{width:1.5px;height:26px;background:var(--line);border-radius:2px;flex:0 0 auto}
 
-  /* status pill */
-  .stat-pill{
-    display:inline-flex;align-items:center;gap:8px;
-    font-family:'Fredoka';font-weight:600;font-size:14px;
-    background:#fff;border:2px solid var(--ink);border-radius:30px;
-    padding:8px 14px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;
+  @media(max-width:980px){
+    .bar{flex-wrap:wrap}
+    .brand{flex:1 1 auto;order:1}
+    .nav-actions{order:2;flex:0 0 auto}
+    .bar .spacer{display:none}
+    .nav-title{flex:1 1 100%;order:3;align-items:flex-start;text-align:left;margin-top:2px}
+    .nav-title .t{font-size:18px}
+    .nav-divider{display:none}
+    .brand .txt .school{white-space:normal}
   }
-  .stat-pill .dot{width:9px;height:9px;border-radius:50%;background:#c2bdb0;flex:0 0 auto}
-  .stat-pill.on{border-color:var(--forest);color:var(--forest)}
-  .stat-pill.on .dot{background:var(--forest);box-shadow:0 0 0 3px rgba(46,125,85,.18)}
+  @media(max-width:600px){
+    .nav-title .t{font-size:16px}
+    .nav-actions{flex:1 1 100%;justify-content:flex-start;order:3}
+    .nav-title{order:2}
+  }
 
-  /* connect button */
-  .btn-connect{
-    background:var(--coral);color:#fff;border:3px solid var(--ink);
-    border-radius:30px;padding:9px 17px;font-size:14px;font-weight:600;
-    box-shadow:3px 3px 0 var(--ink);transition:transform .1s ease,box-shadow .1s ease;
-    white-space:nowrap;font-family:'Fredoka';
+  /* pill status badge */
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:'Nunito';font-weight:700;font-size:12.5px;
+    padding:6px 14px;border-radius:999px;
+    border:1.5px solid var(--line);
+    background:#fff;color:var(--ink-soft);white-space:nowrap;
+    box-shadow:0 1px 4px rgba(31,42,82,.06);
   }
-  .btn-connect:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
-  .btn-connect:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
-  .btn-connect.disc{background:#fff;color:var(--ink)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#c2bdb0;flex:0 0 auto}
+  .pill.on{border-color:var(--forest);color:var(--forest);background:var(--forest-soft)}
+  .pill.on .dot{background:var(--forest);box-shadow:0 0 0 3px rgba(46,125,85,.18)}
 
-  /* admin button */
-  .btn-admin{
-    background:#fff;color:var(--ink);border:3px solid var(--ink);
-    border-radius:30px;padding:9px 17px;font-size:14px;font-weight:600;
-    box-shadow:3px 3px 0 var(--ink);transition:transform .1s ease,box-shadow .1s ease;
-    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Fredoka';
+  /* admin button living in the nav — pill style */
+  .btn.admin-nav{
+    display:inline-flex;align-items:center;gap:6px;
+    border-radius:999px !important;border:1.5px solid var(--line) !important;
+    background:#fff;color:var(--ink);
+    box-shadow:0 1px 4px rgba(31,42,82,.06) !important;
+    padding:6px 15px !important;font-size:13.5px;
   }
-  .btn-admin:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
-  .btn-admin:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
-  .btn-admin.active-mode{background:var(--ink);color:#fff}
-  .btn-admin.unlocked-mode{border-color:var(--forest);color:var(--forest)}
-  .btn-admin.active-mode.unlocked-mode{background:var(--forest);color:#fff;border-color:var(--forest)}
-
-  /* responsive: collapse to 2-row layout */
-  @media(max-width:920px){
-    nav.top-nav{flex-wrap:wrap;gap:10px;padding:11px 16px}
-    .nav-center{flex:1 1 auto;order:2;align-items:flex-end;text-align:right}
-    .nav-brand{order:1}
-    .nav-right{order:3;flex:1 1 100%;border-top:2px solid var(--line);padding-top:10px;margin-top:2px;justify-content:flex-start}
-    .nav-sep{display:none}
-  }
-  @media(max-width:560px){
-    .nav-center .app-title{font-size:18px}
-    .nav-brand .school-txt .sname{font-size:13px}
-    .stat-pill{font-size:12.5px;padding:7px 11px}
-    .btn-connect,.btn-admin{font-size:13px;padding:8px 13px}
-    .nav-right{gap:8px}
-  }
+  .btn.admin-nav .lk{font-size:12px}
+  .btn.admin-nav:hover{border-color:var(--ink) !important;transform:none !important;box-shadow:0 2px 8px rgba(31,42,82,.10) !important}
+  .btn.admin-nav:active{transform:none !important}
+  .btn.admin-nav.active{background:var(--ink) !important;color:#fff;border-color:var(--ink) !important}
+  .btn.admin-nav.unlocked{border-color:var(--forest) !important;color:var(--forest)}
 
   .btn{
     border:2px solid var(--ink);border-radius:12px;padding:9px 15px;
@@ -332,7 +319,8 @@
     .modal .actions .btn{flex:1 1 auto}
     .seg{flex-direction:column}
     .term{font-size:11.5px;max-height:170px}
-    .nav-right .btn-connect,.nav-right .btn-admin{flex:1 1 auto}
+    .nav-actions .btn{flex:1 1 auto}
+    #serialPill{flex:1 1 100%;justify-content:center}
   }
 
   /* small phone */
@@ -374,35 +362,31 @@
 </head>
 <body>
 
-<nav class="top-nav">
-  <!-- LEFT: school brand -->
-  <div class="nav-brand">
-    <!-- Replace the .logo-badge div with your image when ready:
-         <img class="logo-img" src="cognospace-logo.png" alt="CognoSpace"> -->
-    <div class="logo-badge">P</div>
-    <div class="school-txt">
-      <div class="sname">Pallavi International School, Gandipet</div>
-      <div class="spow">Powered by <b>CognoSpace</b></div>
+<header>
+  <div class="bar">
+    <div class="brand">
+      <!-- LOGO: replace the whole .fallback div below with your image, e.g.
+           <img src="cognospace-logo.png" alt="logo">  (don't keep both) -->
+      <div class="fallback">P</div>
+      <div class="txt">
+        <div class="school">Pallavi International School, Gandipet</div>
+        <div class="powered">Powered by <b>CognoSpace</b></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav-title">
+      <span class="t">🐾 Animal Detection</span>
+      <span class="s">Crossing Safety System</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav-actions">
+      <span class="pill" id="serialPill"><span class="dot"></span><span id="serialPillText">ESP32 not connected</span></span>
+      <button class="btn coral" id="connectBtn" style="border-radius:999px;border:none;box-shadow:none;padding:7px 16px;font-size:13.5px">Connect ESP32</button>
+      <span class="nav-divider"></span>
+      <button class="btn admin-nav" id="adminNavBtn">⚙ Admin <span class="lk" id="adminLockIcon">🔒</span></button>
     </div>
   </div>
-
-  <!-- CENTER: app title -->
-  <div class="nav-center">
-    <span class="app-title">🐾 Animal Detection</span>
-    <span class="app-sub">Crossing Safety System</span>
-  </div>
-
-  <!-- RIGHT: status + connect + admin -->
-  <div class="nav-right">
-    <span class="stat-pill" id="serialPill">
-      <span class="dot"></span>
-      <span id="serialPillText">ESP32 not connected</span>
-    </span>
-    <button class="btn-connect" id="connectBtn">Connect ESP32</button>
-    <span class="nav-sep"></span>
-    <button class="btn-admin" id="adminNavBtn">⚙ Admin <span id="adminLockIcon">🔒</span></button>
-  </div>
-</nav>
+</header>
 
 <div class="tabs">
   <button class="tab training active" data-mode="training"><span class="tg">🎓</span> Training mode</button>
@@ -741,12 +725,12 @@ const Serial = {
     const pill=$('serialPill'), txt=$('serialPillText'), btn=$('connectBtn');
     if(this.connected){
       pill.classList.add('on'); txt.textContent="ESP32 connected";
-      btn.textContent="Disconnect"; btn.classList.add('disc');
+      btn.textContent="Disconnect"; btn.classList.remove('coral'); btn.classList.add('ghost');
       $('liveSerialTag').textContent="online"; $('liveSerialTag').className="tag green";
       $('liveOfflineHint').classList.add('hide');
     }else{
       pill.classList.remove('on'); txt.textContent="ESP32 not connected";
-      btn.textContent="Connect ESP32"; btn.classList.remove('disc');
+      btn.textContent="Connect ESP32"; btn.classList.add('coral'); btn.classList.remove('ghost');
       $('liveSerialTag').textContent="offline"; $('liveSerialTag').className="tag ink";
       $('liveOfflineHint').classList.remove('hide');
     }
@@ -1128,13 +1112,13 @@ const Admin = {
   tryUnlock(){
     if($('pwInput').value===ADMIN_PASSWORD){
       this.unlocked=true; $('pwModal').classList.remove('show'); this.show();
-      $('adminNavBtn').classList.add('unlocked-mode'); $('adminLockIcon').textContent='🔓';
+      $('adminNavBtn').classList.add('unlocked'); $('adminLockIcon').textContent='🔓';
       toast("Admin unlocked");
     }else{ $('pwErr').textContent="Wrong password."; }
   },
   show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); },
   hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); },
-  lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked-mode','active-mode'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
+  lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked','active'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
   angles(){
     return {
       Aopen:+$('Aopen').value, Aclose:+$('Aclose').value,
@@ -1176,7 +1160,7 @@ function switchMode(mode){
     $('view-'+m).classList.toggle('hide', m!==mode);
   });
   // nav admin button reflects whether the admin view is open
-  $('adminNavBtn').classList.toggle('active-mode', mode==='admin');
+  $('adminNavBtn').classList.toggle('active', mode==='admin');
   // leaving live stops the loop; entering admin gates with password
   if(mode!=='live' && Live.running){ Live.running=false; if(Live.raf) clearTimeout(Live.raf); }
   if(mode==='live' && Camera.isOn() && Camera.owner==='live'){ Live.start(); }
