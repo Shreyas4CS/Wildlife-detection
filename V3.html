@@ -34,7 +34,7 @@
   .mono{font-family:'JetBrains Mono',monospace}
   .hide{display:none!important}
 
-  /* ===== NAV ===== */
+  /* ===== NAV ===== -*/
   nav.top-nav{
     position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
     gap:14px;padding:12px 26px;background:rgba(255,251,243,.93);backdrop-filter:blur(10px);
@@ -70,10 +70,6 @@
   .btn-admin.active-mode{background:var(--ink);color:#fff}
   .btn-admin.unlocked-mode{border-color:var(--forest);color:var(--forest)}
   .btn-admin.active-mode.unlocked-mode{background:var(--forest);color:#fff;border-color:var(--forest)}
-  .btn-endsession{background:#fff;color:var(--coral);border:3px solid var(--coral);border-radius:30px;padding:9px 17px;font-size:14px;
-    font-weight:600;box-shadow:3px 3px 0 var(--coral-dark);transition:transform .1s,box-shadow .1s;white-space:nowrap;font-family:'Fredoka'}
-  .btn-endsession:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--coral-dark);background:var(--coral);color:#fff}
-  .btn-endsession:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--coral-dark)}
   @media(max-width:920px){
     nav.top-nav{flex-wrap:wrap;gap:10px;padding:11px 16px}
     .nav-center{order:2;align-items:flex-end;text-align:right}
@@ -263,8 +259,6 @@
     <button class="btn-connect" id="connectBtn">Connect ESP32</button>
     <span class="nav-sep"></span>
     <button class="btn-admin" id="adminNavBtn">⚙ Admin <span id="adminLockIcon">🔒</span></button>
-    <span class="nav-sep"></span>
-    <button class="btn-endsession" id="endSessionBtn">⏹ End Session</button>
   </div>
 </nav>
 
@@ -315,11 +309,11 @@
       <div class="body">
         <div class="grid">
           <div>
-            <p class="hint" style="margin-top:0">Turn on the microphone, play or make the animal's sound, then hold Record for 7 seconds. The system averages the sound's frequency fingerprint over that window — pair it with the same name you used for its picture.</p>
+            <p class="hint" style="margin-top:0">Turn on the microphone, play or make the animal's sound, then record a 1-second clip. The system learns the sound's fingerprint — pair it with the same name you used for its picture.</p>
             <div class="snd-meter" id="sndMeter"></div>
             <div class="cam-controls">
               <button class="btn ink" id="micToggleTrain">Start microphone</button>
-              <button class="btn coral" id="recBtn" disabled>● Record 7s sound</button>
+              <button class="btn coral" id="recBtn" disabled>● Record 1s sound</button>
             </div>
           </div>
           <div>
@@ -403,21 +397,21 @@
               <g id="forestBot"></g>
               <!-- animal -->
               <g id="animalIcon" opacity="0"><text x="200" y="135" font-size="30" text-anchor="middle">🦌</text></g>
-              <!-- gate A (start, left): pivot at (72,68); open=-90(up), close=0(horizontal right) -->
+              <!-- gate A (start, left) -->
               <g><rect x="68" y="60" width="8" height="98" rx="2" fill="#cdd2da"/><rect x="66" y="56" width="12" height="8" rx="2" fill="#9aa0ab"/></g>
-              <g id="armA" transform="rotate(-90,72,68)">
-                <rect x="72" y="64" width="126" height="8" rx="4" fill="#F96167"/>
-                <rect x="90" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
-                <rect x="126" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
-                <rect x="162" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
+              <g id="armA" transform="rotate(-82,72,66)">
+                <rect x="72" y="62" width="130" height="9" rx="4" fill="#F96167"/>
+                <rect x="92" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
+                <rect x="132" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
+                <rect x="172" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
               </g>
-              <!-- gate B (end, right): pivot at (328,68); open=90(up), close=180(horizontal left) -->
+              <!-- gate B (end, right) -->
               <g><rect x="324" y="60" width="8" height="98" rx="2" fill="#cdd2da"/><rect x="322" y="56" width="12" height="8" rx="2" fill="#9aa0ab"/></g>
-              <g id="armB" transform="rotate(90,328,68)">
-                <rect x="202" y="64" width="126" height="8" rx="4" fill="#F96167"/>
-                <rect x="284" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
-                <rect x="248" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
-                <rect x="212" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
+              <g id="armB" transform="rotate(82,328,66)">
+                <rect x="198" y="62" width="130" height="9" rx="4" fill="#F96167"/>
+                <rect x="292" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
+                <rect x="252" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
+                <rect x="212" y="62" width="16" height="9" fill="#fff" opacity=".85"/>
               </g>
               <!-- labels -->
               <text x="72" y="178" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">START</text>
@@ -873,7 +867,7 @@ const Audio2 = {
     for(let b=0;b<this.BINS;b++){ let s=0; for(let k=0;k<per;k++) s+=this.data[b*per+k]; v[b]=(s/per)/255; }
     return v;
   },
-  async captureAvg(ms=7000){ // average feature over ms window
+  async captureAvg(ms=1000){ // average feature over ms window
     const acc=new Array(this.BINS).fill(0); let frames=0; const t0=performance.now();
     while(performance.now()-t0<ms){ const f=this.feature(); if(f){ for(let i=0;i<this.BINS;i++) acc[i]+=f[i]; frames++; } await new Promise(r=>setTimeout(r,60)); }
     if(!frames) return null; return acc.map(x=>x/frames);
@@ -896,11 +890,9 @@ $('micToggleTrain').onclick=async()=>{
 };
 $('recBtn').onclick=async()=>{
   if(!Audio2.isOn()){ toast("Start the microphone first"); return; }
-  $('recBtn').disabled=true;
-  let _rSec=7; $('recBtn').textContent='● Recording 7s…';
-  const _rTick=setInterval(()=>{ _rSec--; $('recBtn').textContent=_rSec>0?`● Recording ${_rSec}s…`:'● Finalising…'; if(_rSec<=0) clearInterval(_rTick); },1000);
-  const vec=await Audio2.captureAvg(7000);
-  $('recBtn').textContent='● Record 7s sound'; $('recBtn').disabled=false;
+  $('recBtn').disabled=true; $('recBtn').textContent='● Recording…';
+  const vec=await Audio2.captureAvg(1000);
+  $('recBtn').textContent='● Record 1s sound'; $('recBtn').disabled=false;
   if(!vec){ toast("No audio captured"); return; }
   openNameModal({type:'sound', vec});
 };
@@ -941,7 +933,7 @@ $('resetTrain').onclick=()=>{
    =================================================================== */
 const Gate = {
   state:'go', t0:0, DUR:10000, ledBlink:0, ledOn:false,
-  openA:-90, closeA:0, openB:90, closeB:180,   // arm rotations: open=up, close=horizontal
+  openA:-82, closeA:0, openB:82, closeB:0,   // arm rotations
   toClose(){ if(this.state==='closing'||this.state==='stop') return; this.state='closing'; this.t0=performance.now(); },
   toOpen(){ if(this.state==='opening'||this.state==='go') return; this.state='opening'; this.t0=performance.now(); },
   setArms(a,b){ $('armA').setAttribute('transform',`rotate(${a},72,66)`); $('armB').setAttribute('transform',`rotate(${b},328,66)`); },
@@ -1005,14 +997,7 @@ const Live = {
   async micLoop(){
     if(!this.micRunning||!Audio2.isOn()||Audio2.owner!=='live'){ return; }
     if(Model.ready&&Model.sndKnn.getNumClasses()>0){
-      try{
-        const vec=Audio2.feature();
-        // only classify if there is meaningful sound energy (>8% average), not ambient silence
-        if(vec){ const energy=vec.reduce((a,v)=>a+v,0)/vec.length;
-          if(energy>0.08){ const r=await Model.classifySound(vec); if(r){ const l=r.label; this.lastSnd={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; } }
-          else{ this.lastSnd=null; }
-        }
-      }catch(e){}
+      try{ const vec=Audio2.feature(); if(vec){ const r=await Model.classifySound(vec); if(r){ const l=r.label; this.lastSnd={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; } } }catch(e){}
     }
     this.evaluate();
     this.micTimer=setTimeout(()=>this.micLoop(),500);
@@ -1031,52 +1016,34 @@ const Live = {
   },
   evaluate(){
     const thresh=parseInt($('thresh').value,10);
-    const FUZZY=50; // partial-match floor: 50–thresh range = "may be similar to X" but still closes gates
     // update chips
     const ci=$('chipImg'), cs=$('chipSnd');
-    if(this.lastImg){ $('chipImgV').textContent=`${this.lastImg.label} ${this.lastImg.conf}%`; ci.classList.toggle('hot',this.lastImg.kind!=='safe'&&this.lastImg.conf>=FUZZY); } else { $('chipImgV').textContent='—'; ci.classList.remove('hot'); }
-    if(this.lastSnd){ $('chipSndV').textContent=`${this.lastSnd.label} ${this.lastSnd.conf}%`; cs.classList.toggle('hot',this.lastSnd.kind!=='safe'&&this.lastSnd.conf>=FUZZY); } else { $('chipSndV').textContent='—'; cs.classList.remove('hot'); }
+    if(this.lastImg){ $('chipImgV').textContent=`${this.lastImg.label} ${this.lastImg.conf}%`; ci.classList.toggle('hot',this.lastImg.kind!=='safe'&&this.lastImg.conf>=thresh); } else { $('chipImgV').textContent='—'; ci.classList.remove('hot'); }
+    if(this.lastSnd){ $('chipSndV').textContent=`${this.lastSnd.label} ${this.lastSnd.conf}%`; cs.classList.toggle('hot',this.lastSnd.kind!=='safe'&&this.lastSnd.conf>=thresh); } else { $('chipSndV').textContent='—'; cs.classList.remove('hot'); }
 
-    // strong match = conf >= thresh → definite animal
-    // fuzzy match = 50 ≤ conf < thresh → "may be similar to X" — still closes gates for safety
-    // below 50% or safe class → unknown/clear → gates open
-    let best=null, fuzzy=null;
-    [this.lastImg,this.lastSnd].forEach(r=>{
-      if(!r||r.kind==='safe') return;
-      if(r.conf>=thresh){ if(!best||r.conf>best.conf) best=r; }
-      else if(r.conf>=FUZZY){ if(!fuzzy||r.conf>fuzzy.conf) fuzzy=r; }
-    });
+    // best animal-kind candidate above threshold from either modality
+    let best=null;
+    [this.lastImg,this.lastSnd].forEach(r=>{ if(r&&r.kind!=='safe'&&r.conf>=thresh){ if(!best||r.conf>best.conf) best=r; } });
 
-    if(best){ this.danger(best.label, best.conf, false); }
-    else if(fuzzy){ this.danger(fuzzy.label, fuzzy.conf, true); }
+    if(best){ this.danger(best.label,best.conf); }
     else{
-      // safe class, below 50%, unknown, or no input → road clear
+      // anything else (safe class, low confidence, unknown, no input) -> clear, gates open, no buzzer
       const shown=this.lastImg||this.lastSnd;
       this.clear(shown?shown.label:'', shown?shown.conf:0);
     }
   },
-  danger(name, conf, isFuzzy){
-    this.setVerdict('danger', name, conf, isFuzzy); Gate.toClose();
-    if(this.state!=='danger'){ this.state='danger'; Serial.send('DETECT:'+(isFuzzy?'?'+name:name)); }
+  danger(name,conf){
+    this.setVerdict('danger',name,conf); Gate.toClose();
+    if(this.state!=='danger'){ this.state='danger'; Serial.send('DETECT:'+name); }
   },
   clear(label,conf){
-    this.setVerdict('clear',label,conf,false); Gate.toOpen();
+    this.setVerdict('clear',label,conf); Gate.toOpen();
     if(this.state!=='clear'){ this.state='clear'; Serial.send('CLEAR'); }
   },
-  setVerdict(kind, label, conf, isFuzzy){
+  setVerdict(kind,label,conf){
     const v=$('verdict'), sub=$('verdictSub'), bar=$('confBar');
-    if(kind==='danger'){
-      v.textContent = isFuzzy ? `⚠ May be similar to ${label}` : `⚠ ${label} detected`;
-      v.className='verdict danger';
-      sub.textContent = isFuzzy
-        ? `Partial match ${conf}% — closing gates for safety`
-        : `Confident match ${conf}% · gates closing`;
-      bar.style.background='var(--coral)';
-    } else {
-      v.textContent='Road clear'; v.className='verdict safe';
-      sub.textContent=label?`Closest: ${label} (${conf}% — below 50%, unknown)`:'Waiting for input…';
-      bar.style.background='var(--forest)';
-    }
+    if(kind==='danger'){ v.textContent='⚠ '+label+' detected'; v.className='verdict danger'; sub.textContent='Gates closing · buzzer + LED on'; bar.style.background='var(--coral)'; }
+    else{ v.textContent='Road clear'; v.className='verdict safe'; sub.textContent=label?`Closest: ${label} (below threshold / safe)`:'Waiting for input…'; bar.style.background='var(--forest)'; }
     bar.style.width=Math.max(0,Math.min(100,conf))+'%';
   }
 };
@@ -1121,109 +1088,6 @@ $('lcdClear').onclick=()=>Serial.send('LCD:||||');
 $('silence').onclick=()=>Serial.send('CLEAR');
 
 /* ===================================================================
-   PERSISTENCE — IndexedDB saves KNN + meta across refreshes
-   End Session wipes all stored data
-   =================================================================== */
-const DB = {
-  DB_NAME:'wildguard', DB_VER:1, STORE:'session',
-  open(){
-    return new Promise((res,rej)=>{
-      const req=indexedDB.open(this.DB_NAME, this.DB_VER);
-      req.onupgradeneeded=e=>e.target.result.createObjectStore(this.STORE);
-      req.onsuccess=e=>res(e.target.result);
-      req.onerror=e=>rej(e.target.error);
-    });
-  },
-  async set(key,val){
-    const db=await this.open(); return new Promise((res,rej)=>{
-      const tx=db.transaction(this.STORE,'readwrite');
-      tx.objectStore(this.STORE).put(val,key);
-      tx.oncomplete=()=>res(); tx.onerror=e=>rej(e.target.error);
-    });
-  },
-  async get(key){
-    const db=await this.open(); return new Promise((res,rej)=>{
-      const tx=db.transaction(this.STORE,'readonly');
-      const req=tx.objectStore(this.STORE).get(key);
-      req.onsuccess=e=>res(e.target.result); req.onerror=e=>rej(e.target.error);
-    });
-  },
-  async clear(){
-    const db=await this.open(); return new Promise((res,rej)=>{
-      const tx=db.transaction(this.STORE,'readwrite');
-      tx.objectStore(this.STORE).clear();
-      tx.oncomplete=()=>res(); tx.onerror=e=>rej(e.target.error);
-    });
-  }
-};
-
-// Save the full session (KNN datasets as Float32 arrays + meta) to IndexedDB
-async function saveSession(){
-  try{
-    const imgDatasets={}, sndDatasets={};
-    // imgKnn and sndKnn store tf.Tensor examples; serialize them as Float32Array
-    const imgCnt=Model.imgKnn.getClassExampleCount?Model.imgKnn.getClassExampleCount():{};
-    const sndCnt=Model.sndKnn.getClassExampleCount?Model.sndKnn.getClassExampleCount():{};
-    // use getClassifierDataset to get raw tensors
-    const imgDs=Model.imgKnn.getClassifierDataset();
-    for(const [k,t] of Object.entries(imgDs)){ imgDatasets[k]={data:Array.from(t.dataSync()),shape:t.shape}; }
-    const sndDs=Model.sndKnn.getClassifierDataset();
-    for(const [k,t] of Object.entries(sndDs)){ sndDatasets[k]={data:Array.from(t.dataSync()),shape:t.shape}; }
-    await DB.set('imgKnn', imgDatasets);
-    await DB.set('sndKnn', sndDatasets);
-    await DB.set('meta', Model.meta);
-  }catch(e){ console.warn('saveSession failed:',e); }
-}
-
-// Restore session from IndexedDB after model loads
-async function restoreSession(){
-  try{
-    const imgDatasets=await DB.get('imgKnn');
-    const sndDatasets=await DB.get('sndKnn');
-    const meta=await DB.get('meta');
-    if(imgDatasets){
-      const ds={};
-      for(const [k,v] of Object.entries(imgDatasets)){ ds[k]=tf.tensor(v.data,v.shape); }
-      Model.imgKnn.setClassifierDataset(ds);
-    }
-    if(sndDatasets){
-      const ds={};
-      for(const [k,v] of Object.entries(sndDatasets)){ ds[k]=tf.tensor(v.data,v.shape); }
-      Model.sndKnn.setClassifierDataset(ds);
-    }
-    if(meta){ Model.meta=meta; }
-    if(meta&&Object.keys(meta).length){ renderClasses(); toast('Session restored ✓'); }
-  }catch(e){ console.warn('restoreSession failed:',e); }
-}
-
-// Hook saveSession into every sample-add path
-const _origConfirmName=$('confirmName').onclick;
-$('confirmName').onclick=async function(){
-  _origConfirmName&&_origConfirmName.call(this);
-  // saveSession fires after the modal confirm logic runs
-  setTimeout(saveSession,200);
-};
-// Also hook the remove buttons via the existing renderClasses MutationObserver approach
-// We'll override the resetTrain button too:
-const _origResetTrain=$('resetTrain').onclick;
-$('resetTrain').onclick=async()=>{ _origResetTrain&&_origResetTrain(); saveSession(); };
-
-$('endSessionBtn').onclick=()=>{
-  const confirmed=confirm('End session? This will permanently wipe all training data for this session.');
-  if(!confirmed) return;
-  // stop all hardware
-  try{ Camera.stop(); }catch(e){}
-  try{ Audio2.stop(); }catch(e){}
-  try{ Serial.disconnect(true); }catch(e){}
-  // wipe KNN
-  try{ Model.imgKnn.clearAllClasses(); }catch(e){}
-  try{ Model.sndKnn.clearAllClasses(); }catch(e){}
-  Model.meta={};
-  // wipe IndexedDB then reload
-  DB.clear().finally(()=>{ window.location.reload(); });
-};
-
-/* ===================================================================
    MODE SWITCHING
    =================================================================== */
 function switchMode(mode){
@@ -1243,7 +1107,7 @@ $('adminNavBtn').onclick=()=>switchMode('admin');
 window.addEventListener('load',()=>{
   plantForest(); Gate.tick();
   if(!Serial.supported()) Serial.log("// This browser doesn't support Web Serial. Use Chrome/Edge on desktop.",'sys');
-  Model.load().then(()=>restoreSession()).catch(()=>{ $('modelBanner').innerHTML='⚠ Could not load the vision model. Check your internet connection and refresh.'; });
+  Model.load().catch(()=>{ $('modelBanner').innerHTML='⚠ Could not load the vision model. Check your internet connection and refresh.'; });
 });
 
 </script>
