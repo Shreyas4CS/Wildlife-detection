@@ -99,15 +99,25 @@
   .btn.ghost:hover{box-shadow:none;border-color:var(--ink)}
   .btn.sm{padding:6px 11px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink)}
 
-  /* ===== tabs ===== */
-  .tabs{max-width:1180px;margin:18px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
+  /* ===== tabs row ===== */
+  .tabs{max-width:1180px;margin:18px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .tab{display:flex;align-items:center;gap:9px;border:3px solid var(--ink);border-radius:14px;padding:11px 20px;font-size:16px;
     font-weight:600;background:#fff;color:var(--ink);box-shadow:5px 5px 0 var(--ink);transition:transform .1s,box-shadow .1s}
   .tab:hover{transform:translate(-1px,-1px)}
   .tab .tg{font-size:18px}
   .tab.active.training{background:var(--amber)}
   .tab.active.live{background:var(--forest);color:#fff}
-  @media(max-width:880px){.tabs{margin-top:14px}.tab{flex:1 1 auto;justify-content:center}}
+  
+  /* ===== competitive branding logo elements ===== */
+  .logo-space-container{display:flex;align-items:center;gap:14px;margin-left:auto}
+  .brand-logo-slot{height:46px;width:auto;max-width:140px;object-fit:contain;border-radius:6px;transition:transform 0.2s}
+  .brand-logo-slot:hover{transform:scale(1.04)}
+
+  @media(max-width:880px){
+    .tabs{margin-top:14px;flex-direction:column;align-items:stretch}
+    .tab{flex:1 1 auto;justify-content:center}
+    .logo-space-container{margin-left:0;justify-content:center;padding-top:10px;border-top:1px dashed var(--line)}
+  }
 
   /* ===== layout ===== */
   main{max-width:1180px;margin:0 auto;padding:18px 20px 50px}
@@ -232,12 +242,42 @@
   .loading-banner{display:flex;align-items:center;gap:10px;background:#fff8e6;border:2px solid var(--amber);border-radius:12px;padding:11px 14px;font-weight:700;font-size:13.5px;margin-bottom:14px}
   .spin{width:16px;height:16px;border:3px solid #e7e2d6;border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex:0 0 auto}
 
-  /* ===== footer ===== */
-  .site-footer{border-top:2px solid var(--ink);background:var(--ink);color:#fff;margin-top:20px}
-  .foot-inner{max-width:1180px;margin:0 auto;padding:22px 20px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
-  .foot-main{font-family:'Fredoka';font-weight:500;font-size:15px}
-  .foot-main b{color:var(--amber)}
-  .foot-sub{font-family:'Nunito';font-weight:700;font-size:12.5px;color:#b9c0e0}
+  /* ===== ENHANCED PREMIUM FOOTER ===== */
+  .site-footer {
+    border-top: 4px solid var(--coral);
+    background: linear-gradient(135deg, #121831 0%, #1F2A52 100%);
+    color: #fff;
+    margin-top: 35px;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 32px rgba(31, 42, 82, 0.15);
+  }
+  .foot-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .foot-main {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.02em;
+  }
+  .foot-main b {
+    color: var(--amber);
+    text-shadow: 0 0 12px rgba(255, 194, 51, 0.35);
+  }
+  .foot-sub {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: #a5b2e6;
+    letter-spacing: 0.04em;
+  }
 
   @media(hover:none){.btn:hover,.tab:hover{transform:none}}
   @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -247,7 +287,6 @@
 
 <nav class="top-nav">
   <div class="nav-brand">
-    <!-- Replace .logo-badge with: <img class="logo-img" src="cognospace-logo.png" alt="logo"> -->
     <div class="logo-badge">P</div>
     <div class="school-txt">
       <div class="sname">Pallavi International School, Gandipet</div>
@@ -271,15 +310,18 @@
 <div class="tabs">
   <button class="tab training active" data-mode="training"><span class="tg">🎓</span> Training mode</button>
   <button class="tab live" data-mode="live"><span class="tg">📡</span> Live mode</button>
+  
+  <div class="logo-space-container">
+    <img src="logo1.png" alt="Branding Slot 1" class="brand-logo-slot">
+    <img src="logo2.png" alt="Branding Slot 2" class="brand-logo-slot">
+  </div>
 </div>
 
 <main>
   <div id="modelBanner" class="loading-banner"><span class="spin"></span> Loading the vision model… this runs once and stays in your browser.</div>
 
-  <!-- ===================== TRAINING ===================== -->
   <section id="view-training">
     <div class="grid">
-      <!-- camera / capture -->
       <div class="card">
         <div class="head"><span class="eyebrow">Teach by sight</span><h3>Show an animal to the camera</h3></div>
         <div class="body">
@@ -299,7 +341,6 @@
         </div>
       </div>
 
-      <!-- detailed walkthrough -->
       <div class="card">
         <div class="head"><span class="eyebrow">How the computer sees</span><h3>Processing walkthrough</h3></div>
         <div class="body">
@@ -309,7 +350,6 @@
       </div>
     </div>
 
-    <!-- sound training -->
     <div class="card mt">
       <div class="head"><span class="eyebrow">Teach by sound</span><h3>🔊 Train animals by their call</h3><span class="spacer"></span><span class="tag ink" id="micState">mic off</span></div>
       <div class="body">
@@ -330,7 +370,6 @@
       </div>
     </div>
 
-    <!-- trained classes -->
     <div class="card mt">
       <div class="head"><h3>Trained animals</h3><span class="spacer"></span><span class="tag ink" id="totalSamples">0 samples</span></div>
       <div class="body">
@@ -343,7 +382,6 @@
     </div>
   </section>
 
-  <!-- ===================== LIVE ===================== -->
   <section id="view-live" class="hide">
     <div class="grid">
       <div class="card">
@@ -358,6 +396,7 @@
             <button class="btn ghost" id="camSwitchLive" disabled>↺ Switch camera</button>
             <button class="btn ghost" id="uploadBtnLive">Upload image</button>
             <button class="btn ghost" id="micToggleLive">🎙 Listen for sound</button>
+            <button class="btn ghost hide" id="clearBtnLive" style="color:var(--coral);border-color:var(--coral)">❌ Remove image</button>
             <input type="file" id="fileLive" accept="image/*" class="hide" />
           </div>
           <div class="divider"></div>
@@ -390,20 +429,15 @@
                 </linearGradient>
               </defs>
               <rect x="0" y="0" width="400" height="230" fill="url(#sky)"/>
-              <!-- forest top -->
               <g id="forestTop"></g>
-              <!-- road -->
               <rect x="0" y="92" width="400" height="66" fill="#3a3f4d"/>
               <g fill="#ffd95e">
                 <rect x="14" y="121" width="30" height="7" rx="3"/><rect x="78" y="121" width="30" height="7" rx="3"/>
                 <rect x="142" y="121" width="30" height="7" rx="3"/><rect x="206" y="121" width="30" height="7" rx="3"/>
                 <rect x="270" y="121" width="30" height="7" rx="3"/><rect x="334" y="121" width="30" height="7" rx="3"/>
               </g>
-              <!-- forest bottom -->
               <g id="forestBot"></g>
-              <!-- animal -->
               <g id="animalIcon" opacity="0"><text x="200" y="135" font-size="30" text-anchor="middle">🦌</text></g>
-              <!-- gate A (start, left): pivot at (72,68); open=-90(up), close=0(horizontal right) -->
               <g><rect x="68" y="60" width="8" height="98" rx="2" fill="#cdd2da"/><rect x="66" y="56" width="12" height="8" rx="2" fill="#9aa0ab"/></g>
               <g id="armA" transform="rotate(-90,72,68)">
                 <rect x="72" y="64" width="126" height="8" rx="4" fill="#F96167"/>
@@ -411,7 +445,6 @@
                 <rect x="126" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
                 <rect x="162" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
               </g>
-              <!-- gate B (end, right): pivot at (328,68); open=90(up), close=180(horizontal left) -->
               <g><rect x="324" y="60" width="8" height="98" rx="2" fill="#cdd2da"/><rect x="322" y="56" width="12" height="8" rx="2" fill="#9aa0ab"/></g>
               <g id="armB" transform="rotate(90,328,68)">
                 <rect x="202" y="64" width="126" height="8" rx="4" fill="#F96167"/>
@@ -419,25 +452,19 @@
                 <rect x="248" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
                 <rect x="212" y="64" width="14" height="8" fill="#fff" opacity=".85"/>
               </g>
-              <!-- labels -->
               <text x="72" y="178" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">START</text>
               <text x="328" y="178" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">END</text>
-              <!-- 4-digit display mock -->
               <g id="tmDisplay" transform="translate(150,188)">
                 <rect x="0" y="0" width="100" height="34" rx="6" fill="#11161f" stroke="#1F2A52" stroke-width="2"/>
                 <text id="tmText" x="50" y="24" font-size="20" text-anchor="middle" fill="#ff5a5f" font-family="JetBrains Mono" font-weight="600">GO</text>
               </g>
-              <!-- buzzer -->
               <g id="alarm" opacity="0">
                 <text x="192" y="210" font-size="11" fill="#1F2A52" font-family="Nunito" font-weight="800">🔔</text>
               </g>
-              <!-- Gate A LEDs: red + green -->
               <circle id="ledAred" cx="54" cy="200" r="7" fill="#F96167" opacity="0"/>
               <circle id="ledAgrn" cx="68" cy="200" r="7" fill="#2E7D55" opacity="1"/>
-              <!-- Gate B LEDs: red + green -->
               <circle id="ledBred" cx="332" cy="200" r="7" fill="#F96167" opacity="0"/>
               <circle id="ledBgrn" cx="346" cy="200" r="7" fill="#2E7D55" opacity="1"/>
-              <!-- LED labels -->
               <text x="61" y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate A</text>
               <text x="339" y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate B</text>
             </svg>
@@ -453,7 +480,6 @@
     </div>
   </section>
 
-  <!-- ===================== ADMIN ===================== -->
   <section id="view-admin" class="hide">
     <div class="card" id="adminLocked">
       <div class="lockwall">
@@ -505,7 +531,6 @@
         </div>
       </div>
     </div>
-    <!-- WS2812B LED Strip control — full width below grid -->
     <div class="card" id="neoCard" style="margin-top:18px">
       <div class="head"><span class="eyebrow">WS2812B Strip</span><h3>💡 Addressable LED Strip</h3></div>
       <div class="body">
@@ -530,10 +555,8 @@
         </div>
       </div>
     </div>
-    </div>
   </section>
 
-  <!-- serial console -->
   <div class="card console mt">
     <div class="head"><h3>Serial console</h3><span class="spacer"></span><button class="btn sm ghost" id="clearTerm">Clear</button></div>
     <div class="body" style="padding:0"><div class="term" id="term"><div class="sys">// Connect the ESP32 to see serial traffic here.</div></div></div>
@@ -547,7 +570,6 @@
   </div>
 </footer>
 
-<!-- name modal -->
 <div class="modal-back" id="nameModal">
   <div class="modal">
     <h3 id="nameTitle">Name this sample</h3>
@@ -566,7 +588,6 @@
   </div>
 </div>
 
-<!-- password modal -->
 <div class="modal-back" id="pwModal">
   <div class="modal">
     <h3>Admin password</h3><p>Restricted area — hardware configuration.</p>
@@ -719,7 +740,7 @@ function openNameModal(p){
   Model.names().forEach(n=>{ const c=document.createElement('button'); c.className='chip'; c.textContent=n; c.onclick=()=>{ $('animalName').value=n; const m=Model.meta[n]; setKind(m&&m.kind==='safe'?'safe':'animal'); }; chips.appendChild(c); });
   $('nameModal').classList.add('show'); setTimeout(()=>$('animalName').focus(),50);
 }
-function setKind(k){ pendingKind=k; $('kindAnimal').classList.toggle('sel',k==='animal'); $('kindSafe').classList.toggle('sel',k==='safe'); }
+function setKind(k){ pendingKind=k; $('kindAnimal').toggleAttribute('class','btn ghost',k!=='animal'); $('kindAnimal').classList.toggle('sel',k==='animal'); $('kindSafe').classList.toggle('sel',k==='safe'); }
 $('kindAnimal').onclick=()=>setKind('animal');
 $('kindSafe').onclick=()=>setKind('safe');
 $('cancelName').onclick=()=>{ $('nameModal').classList.remove('show'); pending=null; };
@@ -786,10 +807,7 @@ function renderStep(){
         <div><div class="hint" style="margin-bottom:6px">Cleaned</div><canvas id="grayCanvas" width="120" height="120"></canvas></div>
       </div></div></div>${wtNav()}`;
       drawGray(); break;
-    case 3: c.innerHTML=`<span class="step-badge">Step 4 of 6</span><div class="step-body"><h4>🔍 Feature detection</h4>
-      <p>Now it hunts for important <b>patterns</b>: edges (where colours suddenly change), corners and shapes.</p>
-      <div class="step-visual"><canvas id="edgeCanvas" width="200" height="200"></canvas>
-      <div class="legend"><span>🔺 Shapes</span><span>📐 Corners</span><span>➰ Edges</span></div></div></div>${wtNav()}`;
+    case 3: c.innerHTML=\"<span class=\"step-badge\">Step 4 of 6</span><div class=\"step-body\"><h4>🔍 Feature detection</h4><p>Now it hunts for important <b>patterns</b>: edges (where colours suddenly change), corners and shapes.</p><div class=\"step-visual\"><canvas id=\"edgeCanvas\" width=\"200\" height=\"200\"></canvas><div class=\"legend\"><span>🔺 Shapes</span><span>📐 Corners</span><span>➰ Edges</span></div></div></div>\"+wtNav();
       drawEdges(); break;
     case 4: c.innerHTML=`<span class="step-badge">Step 5 of 6</span><div class="step-body"><h4>🧠 Feature extraction</h4>
       <p>All the clues become a list of numbers — a unique <b>fingerprint</b> for this image, made by the MobileNet neural network.</p>
@@ -903,14 +921,14 @@ const Audio2 = {
   },
   isOn(){ return !!this.analyser; },
   frame(){ if(!this.analyser) return null; this.analyser.getByteFrequencyData(this.data); return this.data; },
-  feature(){ // 32-bin normalized spectrum, averaged over a few frames
+  feature(){ 
     if(!this.analyser) return null;
     const n=this.data.length, per=Math.floor(n/this.BINS), v=new Array(this.BINS).fill(0);
     this.analyser.getByteFrequencyData(this.data);
     for(let b=0;b<this.BINS;b++){ let s=0; for(let k=0;k<per;k++) s+=this.data[b*per+k]; v[b]=(s/per)/255; }
     return v;
   },
-  async captureAvg(ms=7000){ // average feature over ms window
+  async captureAvg(ms=7000){ 
     const acc=new Array(this.BINS).fill(0); let frames=0; const t0=performance.now();
     while(performance.now()-t0<ms){ const f=this.feature(); if(f){ for(let i=0;i<this.BINS;i++) acc[i]+=f[i]; frames++; } await new Promise(r=>setTimeout(r,60)); }
     if(!frames) return null; return acc.map(x=>x/frames);
@@ -978,10 +996,9 @@ $('resetTrain').onclick=()=>{
    =================================================================== */
 const Gate = {
   state:'go', t0:0, DUR:10000, ledBlink:0, ledOn:false,
-  openA:-90, closeA:0, openB:90, closeB:180,   // arm rotations: open=up, close=horizontal
-  toClose(){ if(this.state==='closing'||this.state==='stop') return; this.state='closing'; this.t0=performance.now(); },
-  toOpen(){ if(this.state==='opening'||this.state==='go') return; this.state='opening'; this.t0=performance.now(); },
-  setArms(a,b){ $('armA').setAttribute('transform',`rotate(${a},72,66)`); $('armB').setAttribute('transform',`rotate(${b},328,66)`); },
+  // Virtual angles: open points up, close points 90/-90 degrees down vertically crossing lanes
+  openA:-90, closeA:90, openB:90, closeB:-90,   
+  setArms(a,b){ $('armA').setAttribute('transform',`rotate(${a},72,68)`); $('armB').setAttribute('transform',`rotate(${b},328,68)`); },
   arm(open,close,p){ return open+(close-open)*p; },
   tm(txt,color){ const t=$('tmText'); t.textContent=txt; t.setAttribute('fill',color||'#ff5a5f'); },
   tick(){
@@ -1000,7 +1017,7 @@ const Gate = {
       this.tm(String(Math.ceil((1-p)*10)),'#7CFC9A');
       this.alarm(false,false); if(p>.6) $('animalIcon').setAttribute('opacity','0');
       if(p>=1){ this.state='go'; }
-    } else { // go
+    } else { 
       this.setArms(this.openA,this.openB); this.tm('GO','#7CFC9A'); this.alarm(false,false); $('animalIcon').setAttribute('opacity','0');
     }
     requestAnimationFrame(()=>this.tick());
@@ -1011,13 +1028,11 @@ const Gate = {
       const now=performance.now();
       if(now-this.ledBlink>250){
         this.ledBlink=now; this.ledOn=!this.ledOn;
-        // Red blinks, green off
         const ro=this.ledOn?'1':'0.15';
         $('ledAred').setAttribute('opacity',ro); $('ledBred').setAttribute('opacity',ro);
         $('ledAgrn').setAttribute('opacity','0'); $('ledBgrn').setAttribute('opacity','0');
       }
     } else {
-      // Safe: red off, green on
       $('ledAred').setAttribute('opacity','0'); $('ledBred').setAttribute('opacity','0');
       $('ledAgrn').setAttribute('opacity','1'); $('ledBgrn').setAttribute('opacity','1');
     }
@@ -1039,7 +1054,7 @@ function plantForest(){
    =================================================================== */
 const Live = {
   camRunning:false, micRunning:false, raf:null, micTimer:null, state:'clear',
-  lastImg:null, lastSnd:null,   // {label,conf,kind}
+  lastImg:null, lastSnd:null,   
   startCam(){ this.camRunning=true; if(this.raf) clearTimeout(this.raf); this.camLoop(); },
   stopCam(){ this.camRunning=false; if(this.raf) clearTimeout(this.raf); this.lastImg=null; Camera.stop(); this.evaluate(); },
   async camLoop(){
@@ -1053,23 +1068,30 @@ const Live = {
   stopMic(){ this.micRunning=false; if(this.micTimer) clearTimeout(this.micTimer); this.lastSnd=null; if(Audio2.owner==='live') Audio2.stop(); this.evaluate(); },
   async micLoop(){
     if(!this.micRunning||!Audio2.isOn()||Audio2.owner!=='live'){ return; }
-    // Only run sound classification if at least one sound class has been trained
     const hasSoundTraining = Model.ready && Model.sndKnn.getNumClasses()>0;
     if(hasSoundTraining){
       try{
         const vec=Audio2.feature();
-        // Only classify if there is meaningful sound energy (>8% average), not ambient silence
-        if(vec){ const energy=vec.reduce((a,v)=>a+v,0)/vec.length;
-          if(energy>0.08){ const r=await Model.classifySound(vec); if(r){ const l=r.label; this.lastSnd={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; } }
-          else{ this.lastSnd=null; }
+        if(vec){ 
+          const energy=vec.reduce((a,v)=>a+v,0)/vec.length;
+          const peakEnergy=Math.max(...vec);
+          // ADVANCED: Avoids matching silence to random classes by enforcing energy & clean frequency bounds
+          if(energy > 0.12 && peakEnergy > 0.22){ 
+            const r=await Model.classifySound(vec); 
+            if(r){ 
+              const l=r.label; 
+              this.lastSnd={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; 
+            } 
+          } else { 
+            this.lastSnd=null; 
+          }
         }
       }catch(e){}
     } else {
-      // No sound training -- always clear sound result so mic alone can't trigger detection
       this.lastSnd=null;
     }
     this.evaluate();
-    this.micTimer=setTimeout(()=>this.micLoop(),500);
+    this.micTimer=setTimeout(()=>this.micLoop(),250); // High execution speed for immediate dynamic switching
   },
   async classifyUpload(file){
     if(!Model.ready||Model.imgKnn.getNumClasses()===0){ toast("Train at least one animal first"); return; }
@@ -1079,21 +1101,19 @@ const Live = {
       ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,224,224);
       const stage=$('stageLive'); const old=stage.querySelector('img.shot'); if(old) old.remove();
       if(!Camera.isOn()){ const prev=document.createElement('img'); prev.className='shot'; prev.src=c.toDataURL(); stage.insertBefore(prev,stage.firstChild); $('stageLiveEmpty').style.display='none'; }
+      
+      $('clearBtnLive').classList.remove('hide'); // Render structural remove block
       const r=await Model.classifyImage(c); if(r){ const l=r.label; this.lastImg={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; this.evaluate(); }
     };
     img.src=URL.createObjectURL(file);
   },
   evaluate(){
     const thresh=parseInt($('thresh').value,10);
-    const FUZZY=50; // partial-match floor: 50–thresh range = "may be similar to X" but still closes gates
-    // update chips
+    const FUZZY=50; 
     const ci=$('chipImg'), cs=$('chipSnd');
     if(this.lastImg){ $('chipImgV').textContent=`${this.lastImg.label} ${this.lastImg.conf}%`; ci.classList.toggle('hot',this.lastImg.kind!=='safe'&&this.lastImg.conf>=FUZZY); } else { $('chipImgV').textContent='—'; ci.classList.remove('hot'); }
     if(this.lastSnd){ $('chipSndV').textContent=`${this.lastSnd.label} ${this.lastSnd.conf}%`; cs.classList.toggle('hot',this.lastSnd.kind!=='safe'&&this.lastSnd.conf>=FUZZY); } else { $('chipSndV').textContent='—'; cs.classList.remove('hot'); }
 
-    // strong match = conf >= thresh → definite animal
-    // fuzzy match = 50 ≤ conf < thresh → "may be similar to X" — still closes gates for safety
-    // below 50% or safe class → unknown/clear → gates open
     let best=null, fuzzy=null;
     [this.lastImg,this.lastSnd].forEach(r=>{
       if(!r||r.kind==='safe') return;
@@ -1104,7 +1124,6 @@ const Live = {
     if(best){ this.danger(best.label, best.conf, false); }
     else if(fuzzy){ this.danger(fuzzy.label, fuzzy.conf, true); }
     else{
-      // safe class, below 50%, unknown, or no input → road clear
       const shown=this.lastImg||this.lastSnd;
       this.clear(shown?shown.label:'', shown?shown.conf:0);
     }
@@ -1123,7 +1142,7 @@ const Live = {
   setVerdict(kind, label, conf, isFuzzy){
     const v=$('verdict'), sub=$('verdictSub'), bar=$('confBar');
     if(kind==='danger'){
-      v.textContent = isFuzzy ? `⚠ ${label} detected — STOP!` : `⚠ ${label} detected — STOP!`;
+      v.textContent = `⚠ ${label} detected — STOP!`;
       v.className='verdict danger';
       sub.textContent = isFuzzy
         ? `Partial match ${conf}% · Don't go in that way! Gates closing…`
@@ -1131,7 +1150,7 @@ const Live = {
       bar.style.background='var(--coral)';
     } else {
       v.textContent='Road clear'; v.className='verdict safe';
-      sub.textContent=label?`Closest: ${label} (${conf}% — below threshold, road clear)`:'Waiting for input…';
+      sub.textContent=label?`Closest: ${label} (${conf}% — safe context or below threshold, road clear)`:'Waiting for input…';
       bar.style.background='var(--forest)';
     }
     bar.style.width=Math.max(0,Math.min(100,conf))+'%';
@@ -1140,11 +1159,27 @@ const Live = {
 /* live buttons */
 $('camToggleLive').onclick=async()=>{
   if(Camera.isOn()&&Camera.owner==='live'){ Live.stopCam(); $('stageLiveEmpty').style.display='grid'; $('camToggleLive').textContent='Start camera'; $('camSwitchLive').disabled=true; }
-  else{ const ok=await Camera.start('live'); if(ok){ $('camToggleLive').textContent='Stop camera'; $('camSwitchLive').disabled=false; Live.startCam(); } }
+  else{ 
+    const old=$('stageLive').querySelector('img.shot'); if(old) old.remove();
+    $('clearBtnLive').classList.add('hide');
+    const ok=await Camera.start('live'); if(ok){ $('camToggleLive').textContent='Stop camera'; $('camSwitchLive').disabled=false; Live.startCam(); } 
+  }
 };
 $('camSwitchLive').onclick=()=>Camera.switch();
 $('uploadBtnLive').onclick=()=>$('fileLive').click();
 $('fileLive').onchange=e=>{ if(e.target.files[0]) Live.classifyUpload(e.target.files[0]); };
+
+/* Remove Uploaded image and restore hardware metrics */
+$('clearBtnLive').onclick=()=>{
+  const old=$('stageLive').querySelector('img.shot');
+  if(old) old.remove();
+  if(!Camera.isOn()) $('stageLiveEmpty').style.display='grid';
+  Live.lastImg = null;
+  $('clearBtnLive').classList.add('hide');
+  Live.evaluate();
+  toast("Uploaded image removed");
+};
+
 $('micToggleLive').onclick=async()=>{
   if(Audio2.isOn()&&Audio2.owner==='live'){ Live.stopMic(); $('micToggleLive').textContent='🎙 Listen for sound'; }
   else{ const ok=await Audio2.start('live'); if(ok){ $('micToggleLive').textContent='🛑 Stop listening'; Live.startMic(); } }
@@ -1159,7 +1194,7 @@ const Admin={
   open(){ if(this.unlocked){ this.show(); return; } $('pwInput').value=''; $('pwErr').textContent=''; $('pwModal').classList.add('show'); setTimeout(()=>$('pwInput').focus(),50); },
   tryUnlock(){ if($('pwInput').value===ADMIN_PASSWORD){ this.unlocked=true; $('pwModal').classList.remove('show'); this.show(); $('adminNavBtn').classList.add('unlocked-mode'); $('adminLockIcon').textContent='🔓'; toast("Admin unlocked"); } else $('pwErr').textContent="Wrong password."; },
   show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); $('neoCard').classList.remove('hide'); },
-  hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); $('neoCard').classList.add('hide'); },
+  hide(){ $('adminLocked').remove('hide'); $('adminPanel').classList.add('hide'); $('neoCard').classList.add('hide'); },
   lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked-mode','active-mode'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
   angles(){ return { Aopen:+$('Aopen').value, Aclose:+$('Aclose').value, Bopen:+$('Bopen').value, Bclose:+$('Bclose').value }; },
   pushAngles(quiet){ const a=this.angles(); Serial.send(`CFG:${a.Aopen},${a.Aclose},${a.Bopen},${a.Bclose}`); if(!quiet) toast("Angles sent to ESP32"); }
@@ -1187,7 +1222,6 @@ $('neoColor').onclick=()=>{ const {r,g,b}=hexToRgb($('neoColorPicker').value); S
 
 /* ===================================================================
    PERSISTENCE — IndexedDB saves KNN + meta across refreshes
-   End Session wipes all stored data
    =================================================================== */
 const DB = {
   DB_NAME:'wildguard', DB_VER:1, STORE:'session',
@@ -1222,14 +1256,9 @@ const DB = {
   }
 };
 
-// Save the full session (KNN datasets as Float32 arrays + meta) to IndexedDB
 async function saveSession(){
   try{
     const imgDatasets={}, sndDatasets={};
-    // imgKnn and sndKnn store tf.Tensor examples; serialize them as Float32Array
-    const imgCnt=Model.imgKnn.getClassExampleCount?Model.imgKnn.getClassExampleCount():{};
-    const sndCnt=Model.sndKnn.getClassExampleCount?Model.sndKnn.getClassExampleCount():{};
-    // use getClassifierDataset to get raw tensors
     const imgDs=Model.imgKnn.getClassifierDataset();
     for(const [k,t] of Object.entries(imgDs)){ imgDatasets[k]={data:Array.from(t.dataSync()),shape:t.shape}; }
     const sndDs=Model.sndKnn.getClassifierDataset();
@@ -1240,7 +1269,6 @@ async function saveSession(){
   }catch(e){ console.warn('saveSession failed:',e); }
 }
 
-// Restore session from IndexedDB after model loads
 async function restoreSession(){
   try{
     const imgDatasets=await DB.get('imgKnn');
@@ -1261,30 +1289,24 @@ async function restoreSession(){
   }catch(e){ console.warn('restoreSession failed:',e); }
 }
 
-// Hook saveSession into every sample-add path
 const _origConfirmName=$('confirmName').onclick;
 $('confirmName').onclick=async function(){
   _origConfirmName&&_origConfirmName.call(this);
-  // saveSession fires after the modal confirm logic runs
   setTimeout(saveSession,200);
 };
-// Also hook the remove buttons via the existing renderClasses MutationObserver approach
-// We'll override the resetTrain button too:
+
 const _origResetTrain=$('resetTrain').onclick;
 $('resetTrain').onclick=async()=>{ _origResetTrain&&_origResetTrain(); saveSession(); };
 
 $('endSessionBtn').onclick=()=>{
   const confirmed=confirm('End session? This will permanently wipe all training data for this session.');
   if(!confirmed) return;
-  // stop all hardware
   try{ Camera.stop(); }catch(e){}
   try{ Audio2.stop(); }catch(e){}
   try{ Serial.disconnect(true); }catch(e){}
-  // wipe KNN
   try{ Model.imgKnn.clearAllClasses(); }catch(e){}
   try{ Model.sndKnn.clearAllClasses(); }catch(e){}
   Model.meta={};
-  // wipe IndexedDB then reload
   DB.clear().finally(()=>{ window.location.reload(); });
 };
 
@@ -1295,7 +1317,6 @@ function switchMode(mode){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mode===mode));
   ['training','live','admin'].forEach(m=>$('view-'+m).classList.toggle('hide', m!==mode));
   $('adminNavBtn').classList.toggle('active-mode', mode==='admin');
-  if(mode!=='live'){ /* keep loops running so detection continues if user flips back; but pause cam loop visual only */ }
   if(mode==='admin') Admin.open();
 }
 document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>switchMode(tab.dataset.mode));
@@ -1310,7 +1331,6 @@ window.addEventListener('load',()=>{
   if(!Serial.supported()) Serial.log("// This browser doesn't support Web Serial. Use Chrome/Edge on desktop.",'sys');
   Model.load().then(()=>restoreSession()).catch(()=>{ $('modelBanner').innerHTML='⚠ Could not load the vision model. Check your internet connection and refresh.'; });
 });
-
 </script>
 </body>
 </html>
