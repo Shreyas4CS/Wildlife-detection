@@ -427,23 +427,15 @@
                 <rect x="0" y="0" width="100" height="34" rx="6" fill="#11161f" stroke="#1F2A52" stroke-width="2"/>
                 <text id="tmText" x="50" y="24" font-size="20" text-anchor="middle" fill="#ff5a5f" font-family="JetBrains Mono" font-weight="600">GO</text>
               </g>
-              <!-- buzzer -->
+              <!-- buzzer + led -->
               <g id="alarm" opacity="0">
-                <text x="192" y="210" font-size="11" fill="#1F2A52" font-family="Nunito" font-weight="800">🔔</text>
+                <circle id="ledDot" cx="270" cy="205" r="8" fill="#F96167"/>
+                <text x="285" y="210" font-size="11" fill="#1F2A52" font-family="Nunito" font-weight="800">🔔</text>
               </g>
-              <!-- Gate A LEDs: red + green -->
-              <circle id="ledAred" cx="54" cy="200" r="7" fill="#F96167" opacity="0"/>
-              <circle id="ledAgrn" cx="68" cy="200" r="7" fill="#2E7D55" opacity="1"/>
-              <!-- Gate B LEDs: red + green -->
-              <circle id="ledBred" cx="332" cy="200" r="7" fill="#F96167" opacity="0"/>
-              <circle id="ledBgrn" cx="346" cy="200" r="7" fill="#2E7D55" opacity="1"/>
-              <!-- LED labels -->
-              <text x="61" y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate A</text>
-              <text x="339" y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate B</text>
             </svg>
             <div class="legend2">
-              <span><i style="background:#F96167"></i>Red LED (danger)</span>
-              <span><i style="background:#2E7D55"></i>Green LED (safe)</span>
+              <span><i style="background:#F96167"></i>Gate closed</span>
+              <span><i style="background:#2E7D55"></i>Gate open</span>
               <span><i style="background:#FFC233"></i>Animal on road</span>
             </div>
           </div>
@@ -469,12 +461,12 @@
           <p class="hint" style="margin-top:0">Set the open and closed angle for each gate servo. Saved on the board.</p>
           <div class="divider"></div>
           <h4 style="margin-bottom:12px;color:var(--coral)">Servo A · Road start</h4>
-          <div class="field"><label>Open angle <span class="anglebox" id="vAopen">92°</span></label><input type="range" id="Aopen" min="0" max="180" value="92"></div>
-          <div class="field"><label>Closed angle <span class="anglebox" id="vAclose">7°</span></label><input type="range" id="Aclose" min="0" max="180" value="7"></div>
+          <div class="field"><label>Open angle <span class="anglebox" id="vAopen">10°</span></label><input type="range" id="Aopen" min="0" max="180" value="10"></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vAclose">90°</span></label><input type="range" id="Aclose" min="0" max="180" value="90"></div>
           <div class="divider"></div>
           <h4 style="margin-bottom:12px;color:var(--coral)">Servo B · Road end</h4>
-          <div class="field"><label>Open angle <span class="anglebox" id="vBopen">100°</span></label><input type="range" id="Bopen" min="0" max="180" value="100"></div>
-          <div class="field"><label>Closed angle <span class="anglebox" id="vBclose">12°</span></label><input type="range" id="Bclose" min="0" max="180" value="12"></div>
+          <div class="field"><label>Open angle <span class="anglebox" id="vBopen">10°</span></label><input type="range" id="Bopen" min="0" max="180" value="10"></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vBclose">90°</span></label><input type="range" id="Bclose" min="0" max="180" value="90"></div>
           <div class="divider"></div>
           <button class="btn coral" id="sendAngles" style="width:100%">Save angles to ESP32</button>
           <div style="display:flex;gap:10px;margin-top:10px">
@@ -486,7 +478,7 @@
       <div class="card">
         <div class="head"><span class="eyebrow">Display</span><h3>LCD 20×4 message</h3></div>
         <div class="body">
-          <p class="hint" style="margin-top:0">Send up to 4 lines (20 chars each) to both I²C LCDs.</p>
+          <p class="hint" style="margin-top:0">Send up to 4 lines (20 chars each) to the I²C LCD.</p>
           <div class="divider"></div>
           <div class="field"><input type="text" id="lcdLine1" maxlength="20" placeholder="Line 1 (max 20 chars)"></div>
           <div class="field"><input type="text" id="lcdLine2" maxlength="20" placeholder="Line 2"></div>
@@ -496,40 +488,11 @@
           <div class="divider"></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn ghost" id="lcdClear" style="flex:1">Clear LCD</button>
-            <button class="btn ghost" id="lcdDefault" style="flex:1">Default message</button>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
             <button class="btn ghost" id="silence" style="flex:1">Open gates (GO)</button>
           </div>
           <button class="btn ink" id="logoutAdmin" style="width:100%;margin-top:14px">Lock admin mode</button>
         </div>
       </div>
-    </div>
-    <!-- WS2812B LED Strip control — full width below grid -->
-    <div class="card" id="neoCard" style="margin-top:18px">
-      <div class="head"><span class="eyebrow">WS2812B Strip</span><h3>💡 Addressable LED Strip</h3></div>
-      <div class="body">
-        <p class="hint" style="margin-top:0">Control the WS2812B LED strip connected to the ESP32.</p>
-        <div class="divider"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:0 0 auto">
-            <label style="font-family:'Fredoka';font-weight:500;font-size:14px;display:block;margin-bottom:7px">Strip colour</label>
-            <input type="color" id="neoColorPicker" value="#ffffff" style="width:60px;height:44px;border:2px solid var(--ink);border-radius:10px;cursor:pointer;padding:2px">
-          </div>
-          <button class="btn coral" id="neoOn" style="flex:1;min-width:120px">Turn ON</button>
-          <button class="btn ghost" id="neoOff" style="flex:1;min-width:120px">Turn OFF</button>
-          <button class="btn ink" id="neoColor" style="flex:1;min-width:120px">Set Colour</button>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-          <button class="btn ghost sm" onclick="setNeoPreset('#ff0000')">🔴 Red</button>
-          <button class="btn ghost sm" onclick="setNeoPreset('#00ff00')">🟢 Green</button>
-          <button class="btn ghost sm" onclick="setNeoPreset('#0000ff')">🔵 Blue</button>
-          <button class="btn ghost sm" onclick="setNeoPreset('#ffffff')">⬜ White</button>
-          <button class="btn ghost sm" onclick="setNeoPreset('#ffa500')">🟠 Orange</button>
-          <button class="btn ghost sm" onclick="setNeoPreset('#ff00ff')">🟣 Purple</button>
-        </div>
-      </div>
-    </div>
     </div>
   </section>
 
@@ -1007,20 +970,8 @@ const Gate = {
   },
   alarm(show,blink){
     const a=$('alarm'); a.setAttribute('opacity',show?'1':'0');
-    if(show && blink){
-      const now=performance.now();
-      if(now-this.ledBlink>250){
-        this.ledBlink=now; this.ledOn=!this.ledOn;
-        // Red blinks, green off
-        const ro=this.ledOn?'1':'0.15';
-        $('ledAred').setAttribute('opacity',ro); $('ledBred').setAttribute('opacity',ro);
-        $('ledAgrn').setAttribute('opacity','0'); $('ledBgrn').setAttribute('opacity','0');
-      }
-    } else {
-      // Safe: red off, green on
-      $('ledAred').setAttribute('opacity','0'); $('ledBred').setAttribute('opacity','0');
-      $('ledAgrn').setAttribute('opacity','1'); $('ledBgrn').setAttribute('opacity','1');
-    }
+    if(blink){ const now=performance.now(); if(now-this.ledBlink>250){ this.ledBlink=now; this.ledOn=!this.ledOn; $('ledDot').setAttribute('opacity',this.ledOn?'1':'0.2'); } }
+    else $('ledDot').setAttribute('opacity','1');
   }
 };
 
@@ -1053,20 +1004,15 @@ const Live = {
   stopMic(){ this.micRunning=false; if(this.micTimer) clearTimeout(this.micTimer); this.lastSnd=null; if(Audio2.owner==='live') Audio2.stop(); this.evaluate(); },
   async micLoop(){
     if(!this.micRunning||!Audio2.isOn()||Audio2.owner!=='live'){ return; }
-    // Only run sound classification if at least one sound class has been trained
-    const hasSoundTraining = Model.ready && Model.sndKnn.getNumClasses()>0;
-    if(hasSoundTraining){
+    if(Model.ready&&Model.sndKnn.getNumClasses()>0){
       try{
         const vec=Audio2.feature();
-        // Only classify if there is meaningful sound energy (>8% average), not ambient silence
+        // only classify if there is meaningful sound energy (>8% average), not ambient silence
         if(vec){ const energy=vec.reduce((a,v)=>a+v,0)/vec.length;
           if(energy>0.08){ const r=await Model.classifySound(vec); if(r){ const l=r.label; this.lastSnd={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; } }
           else{ this.lastSnd=null; }
         }
       }catch(e){}
-    } else {
-      // No sound training -- always clear sound result so mic alone can't trigger detection
-      this.lastSnd=null;
     }
     this.evaluate();
     this.micTimer=setTimeout(()=>this.micLoop(),500);
@@ -1111,10 +1057,7 @@ const Live = {
   },
   danger(name, conf, isFuzzy){
     this.setVerdict('danger', name, conf, isFuzzy); Gate.toClose();
-    if(this.state!=='danger'){
-      this.state='danger';
-      Serial.send('DETECT:'+(isFuzzy?'?'+name:name));
-    }
+    if(this.state!=='danger'){ this.state='danger'; Serial.send('DETECT:'+(isFuzzy?'?'+name:name)); }
   },
   clear(label,conf){
     this.setVerdict('clear',label,conf,false); Gate.toOpen();
@@ -1123,15 +1066,15 @@ const Live = {
   setVerdict(kind, label, conf, isFuzzy){
     const v=$('verdict'), sub=$('verdictSub'), bar=$('confBar');
     if(kind==='danger'){
-      v.textContent = isFuzzy ? `⚠ ${label} detected — STOP!` : `⚠ ${label} detected — STOP!`;
+      v.textContent = isFuzzy ? `⚠ May be similar to ${label}` : `⚠ ${label} detected`;
       v.className='verdict danger';
       sub.textContent = isFuzzy
-        ? `Partial match ${conf}% · Don't go in that way! Gates closing…`
-        : `Confident match ${conf}% · Don't go in that way! Gates closing…`;
+        ? `Partial match ${conf}% — closing gates for safety`
+        : `Confident match ${conf}% · gates closing`;
       bar.style.background='var(--coral)';
     } else {
       v.textContent='Road clear'; v.className='verdict safe';
-      sub.textContent=label?`Closest: ${label} (${conf}% — below threshold, road clear)`:'Waiting for input…';
+      sub.textContent=label?`Closest: ${label} (${conf}% — below 50%, unknown)`:'Waiting for input…';
       bar.style.background='var(--forest)';
     }
     bar.style.width=Math.max(0,Math.min(100,conf))+'%';
@@ -1158,8 +1101,8 @@ const Admin={
   unlocked:false,
   open(){ if(this.unlocked){ this.show(); return; } $('pwInput').value=''; $('pwErr').textContent=''; $('pwModal').classList.add('show'); setTimeout(()=>$('pwInput').focus(),50); },
   tryUnlock(){ if($('pwInput').value===ADMIN_PASSWORD){ this.unlocked=true; $('pwModal').classList.remove('show'); this.show(); $('adminNavBtn').classList.add('unlocked-mode'); $('adminLockIcon').textContent='🔓'; toast("Admin unlocked"); } else $('pwErr').textContent="Wrong password."; },
-  show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); $('neoCard').classList.remove('hide'); },
-  hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); $('neoCard').classList.add('hide'); },
+  show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); },
+  hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); },
   lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked-mode','active-mode'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
   angles(){ return { Aopen:+$('Aopen').value, Aclose:+$('Aclose').value, Bopen:+$('Bopen').value, Bclose:+$('Bclose').value }; },
   pushAngles(quiet){ const a=this.angles(); Serial.send(`CFG:${a.Aopen},${a.Aclose},${a.Bopen},${a.Bclose}`); if(!quiet) toast("Angles sent to ESP32"); }
@@ -1174,16 +1117,8 @@ $('sendAngles').onclick=()=>Admin.pushAngles(false);
 $('testOpen').onclick=()=>Serial.send('GATE:OPEN');
 $('testClose').onclick=()=>Serial.send('GATE:CLOSE');
 $('sendLcd').onclick=()=>{ Serial.send(`LCD:${$('lcdLine1').value}|${$('lcdLine2').value}|${$('lcdLine3').value}|${$('lcdLine4').value}`); toast("Sent to LCD"); };
-$('lcdClear').onclick=()=>{ Serial.send('LCD:||||'); toast("LCD cleared"); };
-$('lcdDefault').onclick=()=>{ Serial.send('LCD:DEFAULT'); toast("Default message restored"); };
+$('lcdClear').onclick=()=>Serial.send('LCD:||||');
 $('silence').onclick=()=>Serial.send('CLEAR');
-
-// WS2812B NeoPixel controls
-function hexToRgb(hex){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return {r,g,b}; }
-function setNeoPreset(hex){ $('neoColorPicker').value=hex; const {r,g,b}=hexToRgb(hex); Serial.send(`NEO:COLOR:${r},${g},${b}`); toast(`Strip colour set`); }
-$('neoOn').onclick=()=>{ Serial.send('NEO:ON'); toast("Strip ON"); };
-$('neoOff').onclick=()=>{ Serial.send('NEO:OFF'); toast("Strip OFF"); };
-$('neoColor').onclick=()=>{ const {r,g,b}=hexToRgb($('neoColorPicker').value); Serial.send(`NEO:COLOR:${r},${g},${b}`); toast("Colour sent"); };
 
 /* ===================================================================
    PERSISTENCE — IndexedDB saves KNN + meta across refreshes
