@@ -55,7 +55,7 @@
   .tabs-logos{display:flex;align-items:center;gap:18px;margin-left:auto}
   .tabs-logos .logo-box-1,.tabs-logos .logo-box-2{display:flex;align-items:center;justify-content:center;
     box-sizing:border-box;transition:transform .15s ease,opacity .15s ease}
-  .tabs-logos .logo-box-1{height:68px;width:380px;} /* ⭐ CHANGE LOGO 1 SIZE HERE (desktop) */
+  .tabs-logos .logo-box-1{height:68px;width:280px;} /* ⭐ CHANGE LOGO 1 SIZE HERE (desktop) */
   .tabs-logos .logo-box-2{height:68px;width:200px;} /* ⭐ CHANGE LOGO 2 SIZE HERE (desktop) */
   .tabs-logos .logo-box-1:hover,.tabs-logos .logo-box-2:hover{transform:translateY(-2px);opacity:.85}
   .tabs-logos .brand-logo{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;display:block;margin:auto}
@@ -67,7 +67,7 @@
     .tabs-logos .logo-box-1{height:52px;width:140px} /* ⭐ CHANGE LOGO 1 SIZE HERE (mobile) */
     .tabs-logos .logo-box-2{height:52px;width:140px} /* ⭐ CHANGE LOGO 2 SIZE HERE (mobile) */
   }
-  .nav-center{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1;pointer-events:none}
+  .nav-center{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.1}
   .nav-center .app-title{font-family:'Fredoka';font-weight:700;font-size:22px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
   .nav-center .app-sub{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
   .nav-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
@@ -95,13 +95,12 @@
   .btn-endsession:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--coral-dark)}
   @media(max-width:920px){
     nav.top-nav{flex-wrap:wrap;gap:10px;padding:11px 16px}
-    .nav-center{order:2;align-items:flex-end;text-align:right}
-    .nav-brand{order:1}
+    .nav-center{order:1;align-items:flex-start;text-align:left}
     .nav-right{order:3;flex:1 1 100%;border-top:2px solid var(--line);padding-top:10px;justify-content:flex-start}
     .nav-sep{display:none}
   }
   @media(max-width:560px){
-    .nav-center .app-title{font-size:18px}.nav-brand .sname{font-size:13px}
+    .nav-center .app-title{font-size:18px}
     .stat-pill{font-size:12.5px;padding:7px 11px}.btn-connect,.btn-admin{font-size:13px;padding:8px 13px}.nav-right{gap:8px}
   }
 
@@ -273,14 +272,6 @@
 <body>
 
 <nav class="top-nav">
-  <div class="nav-brand">
-    <!-- School badge: replace this div with <img class="logo-img" src="your-school-logo.png" alt="School logo"> once you have the PNG -->
-    <div class="logo-badge">P</div>
-    <div class="school-txt">
-      <div class="sname">Pallavi International School, Gandipet</div>
-      <div class="spow">Powered by <b>CognoSpace</b></div>
-    </div>
-  </div>
   <div class="nav-center">
     <span class="app-title">🐾 Animal Detection</span>
     <span class="app-sub">Crossing Safety System</span>
