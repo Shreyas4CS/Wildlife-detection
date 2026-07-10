@@ -50,23 +50,17 @@
   .nav-brand .spow b{color:var(--coral)}
   /* ===== logo slots — drop in a PNG src; height is fixed, width auto-scales to keep aspect ratio ===== */
   /* ===== logo boxes in the tabs row — drop in any size PNG, it auto-fits =====
-     TO RESIZE LOGO 1: change height/width in .logo-box-1 below
-     TO RESIZE LOGO 2: change height/width in .logo-box-2 below */
+     TO RESIZE: just change the height/width values below (the two lines marked ⭐) */
   .tabs-logos{display:flex;align-items:center;gap:18px;margin-left:auto}
-  .tabs-logos .logo-box-1,.tabs-logos .logo-box-2{display:flex;align-items:center;justify-content:center;
+  .tabs-logos .logo-box{display:flex;align-items:center;justify-content:center;
+    height:68px;width:180px; /* ⭐ CHANGE LOGO SIZE HERE (desktop) */
     box-sizing:border-box;transition:transform .15s ease,opacity .15s ease}
-  .tabs-logos .logo-box-1{height:68px;width:380px;} /* ⭐ CHANGE LOGO 1 SIZE HERE (desktop) */
-  .tabs-logos .logo-box-2{height:68px;width:200px;} /* ⭐ CHANGE LOGO 2 SIZE HERE (desktop) */
-  .tabs-logos .logo-box-1:hover,.tabs-logos .logo-box-2:hover{transform:translateY(-2px);opacity:.85}
+  .tabs-logos .logo-box:hover{transform:translateY(-2px);opacity:.85}
   .tabs-logos .brand-logo{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;display:block;margin:auto}
-  .tabs-logos .brand-logo[src=""],.tabs-logos .brand-logo:not([src]){display:none}
-  .tabs-logos .logo-box-1:has(.brand-logo[src=""]),.tabs-logos .logo-box-1:has(.brand-logo:not([src])){display:none}
-  .tabs-logos .logo-box-2:has(.brand-logo[src=""]),.tabs-logos .logo-box-2:has(.brand-logo:not([src])){display:none}
+  .tabs-logos .logo-box[src=""],.tabs-logos .brand-logo:not([src]){display:none}
+  .tabs-logos .logo-box:has(.brand-logo[src=""]),.tabs-logos .logo-box:has(.brand-logo:not([src])){display:none}
   @media(max-width:880px){.tabs-logos{margin-left:0;order:3;width:100%;justify-content:flex-start}}
-  @media(max-width:560px){
-    .tabs-logos .logo-box-1{height:52px;width:140px} /* ⭐ CHANGE LOGO 1 SIZE HERE (mobile) */
-    .tabs-logos .logo-box-2{height:52px;width:140px} /* ⭐ CHANGE LOGO 2 SIZE HERE (mobile) */
-  }
+  @media(max-width:560px){.tabs-logos .logo-box{height:52px;width:140px} /* ⭐ CHANGE LOGO SIZE HERE (mobile) */}
   .nav-center{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1;pointer-events:none}
   .nav-center .app-title{font-family:'Fredoka';font-weight:700;font-size:22px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
   .nav-center .app-sub{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
@@ -300,11 +294,11 @@
   <button class="tab live" data-mode="live"><span class="tg">📡</span> Live mode</button>
   <div class="tabs-logos">
     <!-- Logo slot 1 — drop in your PNG and just change the src below -->
-    <a class="logo-box-1" href="https://pallaviinternationalschool.com/" target="_blank" rel="noopener noreferrer" title="Visit website">
+    <a class="logo-box" href="https://pallaviinternationalschool.com/" target="_blank" rel="noopener noreferrer" title="Visit website">
       <img class="brand-logo" id="logoSlot1" src="pallavi.png" alt="Logo 1" />
     </a>
     <!-- Logo slot 2 — drop in your PNG and just change the src below -->
-    <a class="logo-box-2" href="https://cognospace.in/" target="_blank" rel="noopener noreferrer" title="Visit website">
+    <a class="logo-box" href="https://cognospace.in/" target="_blank" rel="noopener noreferrer" title="Visit website">
       <img class="brand-logo" id="logoSlot2" src="cognospace.png" alt="Logo 2" />
     </a>
   </div>
