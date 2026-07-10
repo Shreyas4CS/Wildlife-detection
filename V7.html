@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WildGuard · Animal Crossing Detection · CognoSpace</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.6/dist/knn-classifier.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#1F2A52; --ink-soft:#54608a;
+    --coral:#F96167; --coral-dark:#d8474d;
+    --amber:#FFC233; --forest:#2E7D55; --forest-soft:#e3f3ea;
+    --cream:#FFFBF3; --card:#FFFFFF; --line:#e7e2d6;
+    --shadow:0 10px 30px rgba(31,42,82,.08);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+  body{
+    font-family:'Nunito',sans-serif;color:var(--ink);min-height:100vh;
+    background:radial-gradient(1200px 500px at 80% -10%, #fff4dd 0%, transparent 60%), var(--cream);
+  }
+  img{max-width:100%}
+  h1,h2,h3,h4{font-family:'Fredoka',sans-serif;font-weight:600;margin:0}
+  button{font-family:'Fredoka',sans-serif;cursor:pointer;border:none;background:none}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .hide{display:none!important}
+
+  /* ===== NAV ===== */
+  nav.top-nav{
+    position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+    gap:14px;padding:12px 26px;background:rgba(255,251,243,.93);backdrop-filter:blur(10px);
+    border-bottom:3px solid var(--ink);box-shadow:0 2px 0 rgba(31,42,82,.06);
+  }
+  .nav-brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+  .nav-brand .logo-img{height:44px;width:auto;max-width:130px;object-fit:contain;display:block;border-radius:8px}
+  .nav-brand .logo-badge{height:44px;width:44px;border-radius:12px;flex:0 0 auto;background:var(--ink);color:#fff;
+    display:grid;place-items:center;font-family:'Fredoka';font-weight:700;font-size:20px;box-shadow:3px 3px 0 var(--coral)}
+  .nav-brand .school-txt{line-height:1.2;min-width:0}
+  .nav-brand .sname{font-family:'Fredoka';font-weight:600;font-size:14.5px;color:var(--ink);white-space:nowrap}
+  .nav-brand .spow{font-family:'Nunito';font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);margin-top:1px}
+  .nav-brand .spow b{color:var(--coral)}
+  /* ===== logo slots — drop in a PNG src; height is fixed, width auto-scales to keep aspect ratio ===== */
+  /* ===== logo boxes in the tabs row — drop in any size PNG, it auto-fits ===== */
+  .tabs-logos{display:flex;align-items:center;gap:14px;margin-left:auto}
+  .tabs-logos .logo-box{display:flex;align-items:center;justify-content:center;height:68px;width:180px;
+    border:1.5px solid var(--line,#e2e2ea);border-radius:12px;background:#fff;padding:8px 14px;
+    box-sizing:border-box;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+  .tabs-logos .logo-box:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.08);border-color:#c9c9d6}
+  .tabs-logos .brand-logo{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;display:block;margin:auto}
+  .tabs-logos .logo-box[src=""],.tabs-logos .brand-logo:not([src]){display:none}
+  .tabs-logos .logo-box:has(.brand-logo[src=""]),.tabs-logos .logo-box:has(.brand-logo:not([src])){display:none}
+  @media(max-width:880px){.tabs-logos{margin-left:0;order:3;width:100%;justify-content:flex-start}}
+  @media(max-width:560px){.tabs-logos .logo-box{height:52px;width:140px;padding:6px 10px}}
+  .nav-center{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1;pointer-events:none}
+  .nav-center .app-title{font-family:'Fredoka';font-weight:700;font-size:22px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .nav-center .app-sub{font-family:'Nunito';font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+  .nav-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+  .nav-sep{width:2px;height:28px;background:var(--line);border-radius:2px;opacity:.6}
+  .stat-pill{display:inline-flex;align-items:center;gap:8px;font-family:'Fredoka';font-weight:600;font-size:14px;
+    background:#fff;border:2px solid var(--ink);border-radius:30px;padding:8px 14px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
+  .stat-pill .dot{width:9px;height:9px;border-radius:50%;background:#c2bdb0;flex:0 0 auto}
+  .stat-pill.on{border-color:var(--forest);color:var(--forest)}
+  .stat-pill.on .dot{background:var(--forest);box-shadow:0 0 0 3px rgba(46,125,85,.18)}
+  .btn-connect{background:var(--coral);color:#fff;border:3px solid var(--ink);border-radius:30px;padding:9px 17px;
+    font-size:14px;font-weight:600;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s;white-space:nowrap;font-family:'Fredoka'}
+  .btn-connect:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .btn-connect:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+  .btn-connect.disc{background:#fff;color:var(--ink)}
+  .btn-admin{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:30px;padding:9px 17px;font-size:14px;
+    font-weight:600;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Fredoka'}
+  .btn-admin:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .btn-admin:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+  .btn-admin.active-mode{background:var(--ink);color:#fff}
+  .btn-admin.unlocked-mode{border-color:var(--forest);color:var(--forest)}
+  .btn-admin.active-mode.unlocked-mode{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .btn-endsession{background:#fff;color:var(--coral);border:3px solid var(--coral);border-radius:30px;padding:9px 17px;font-size:14px;
+    font-weight:600;box-shadow:3px 3px 0 var(--coral-dark);transition:transform .1s,box-shadow .1s;white-space:nowrap;font-family:'Fredoka'}
+  .btn-endsession:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--coral-dark);background:var(--coral);color:#fff}
+  .btn-endsession:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--coral-dark)}
+  @media(max-width:920px){
+    nav.top-nav{flex-wrap:wrap;gap:10px;padding:11px 16px}
+    .nav-center{order:2;align-items:flex-end;text-align:right}
+    .nav-brand{order:1}
+    .nav-right{order:3;flex:1 1 100%;border-top:2px solid var(--line);padding-top:10px;justify-content:flex-start}
+    .nav-sep{display:none}
+  }
+  @media(max-width:560px){
+    .nav-center .app-title{font-size:18px}.nav-brand .sname{font-size:13px}
+    .stat-pill{font-size:12.5px;padding:7px 11px}.btn-connect,.btn-admin{font-size:13px;padding:8px 13px}.nav-right{gap:8px}
+  }
+
+  /* ===== generic buttons ===== */
+  .btn{border:2px solid var(--ink);border-radius:12px;padding:9px 15px;font-weight:600;font-size:14px;background:#fff;color:var(--ink);
+    transition:transform .08s,box-shadow .08s;box-shadow:3px 3px 0 var(--ink)}
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+  .btn:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+  .btn.coral{background:var(--coral);color:#fff;border-color:var(--coral-dark);box-shadow:3px 3px 0 var(--coral-dark)}
+  .btn.coral:hover{box-shadow:4px 4px 0 var(--coral-dark)}
+  .btn.ink{background:var(--ink);color:#fff}
+  .btn.ghost{box-shadow:none;border-color:var(--line)}
+  .btn.ghost:hover{box-shadow:none;border-color:var(--ink)}
+  .btn.sm{padding:6px 11px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink)}
+
+  /* ===== tabs ===== */
+  .tabs{max-width:1180px;margin:18px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
+  .tab{display:flex;align-items:center;gap:9px;border:3px solid var(--ink);border-radius:14px;padding:11px 20px;font-size:16px;
+    font-weight:600;background:#fff;color:var(--ink);box-shadow:5px 5px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+  .tab:hover{transform:translate(-1px,-1px)}
+  .tab .tg{font-size:18px}
+  .tab.active.training{background:var(--amber)}
+  .tab.active.live{background:var(--forest);color:#fff}
+  @media(max-width:880px){.tabs{margin-top:14px}.tab{flex:1 1 auto;justify-content:center}}
+
+  /* ===== layout ===== */
+  main{max-width:1180px;margin:0 auto;padding:18px 20px 50px}
+  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .card.mt{margin-top:18px}
+  .card .head{padding:14px 18px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px}
+  .card .head h3{font-size:18px}
+  .card .head .eyebrow{font-family:'Nunito';font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .card .body{padding:18px}
+  .spacer{flex:1 1 auto}
+  .tag{font-family:'Nunito';font-weight:800;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .tag.amber{background:#fff2cf;color:#8a6400}
+  .tag.green{background:var(--forest-soft);color:var(--forest)}
+  .tag.ink{background:#eceaf4;color:var(--ink)}
+  .divider{height:2px;background:var(--line);margin:18px 0;border-radius:2px}
+  .hint{font-size:12.5px;color:var(--ink-soft);font-weight:600;line-height:1.5}
+
+  /* ===== camera stage ===== */
+  .stage{position:relative;background:#0e1430;border-radius:14px;overflow:hidden;aspect-ratio:4/3;border:2px solid var(--ink)}
+  .stage video,.stage img.shot{width:100%;height:100%;object-fit:cover;display:block}
+  .stage .empty{position:absolute;inset:0;display:grid;place-items:center;color:#9aa6d6;text-align:center;font-weight:700;padding:24px;font-family:'Fredoka'}
+  .cam-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  @media(max-width:600px){.cam-controls .btn{flex:1 1 100%}}
+  .stage .live-badge{position:absolute;top:10px;left:10px;display:none;align-items:center;gap:6px;background:rgba(249,97,103,.92);
+    color:#fff;font-family:'Fredoka';font-weight:600;font-size:12px;padding:4px 10px;border-radius:999px}
+  .stage .live-badge.show{display:inline-flex}
+  .stage .live-badge .b{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+  .stage .stage-remove{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(249,97,103,.92);
+    color:#fff;font-family:'Fredoka';font-weight:700;font-size:14px;display:grid;place-items:center;border:2px solid rgba(255,255,255,.6);
+    transition:transform .12s,background .12s;z-index:5}
+  .stage .stage-remove:hover{background:var(--coral-dark);transform:scale(1.08)}
+  .stage .stage-remove:active{transform:scale(.94)}
+  @keyframes blink{50%{opacity:.25}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== detailed walkthrough ===== */
+  .wt-empty{text-align:center;color:var(--ink-soft);font-weight:700;padding:30px 16px;font-size:14px}
+  .step-dots{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .step-dot{height:8px;flex:1 1 auto;min-width:22px;border-radius:999px;background:#e7e2d6}
+  .step-dot.done{background:var(--forest)}
+  .step-dot.current{background:var(--amber)}
+  .step-badge{display:inline-block;font-family:'Nunito';font-weight:800;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-soft);background:#f3f0e7;border-radius:999px;padding:4px 11px;margin-bottom:8px}
+  .step-body h4{font-size:19px;margin-bottom:6px}
+  .step-body p{font-size:14px;color:var(--ink-soft);font-weight:600;margin:0 0 12px;line-height:1.5}
+  .step-visual{display:flex;flex-direction:column;align-items:center;gap:10px;margin:8px 0 4px}
+  .step-visual img,.step-visual canvas{border-radius:12px;border:2px solid var(--ink);max-width:100%}
+  .pixel-grid{display:grid;gap:2px}
+  .pixel-grid .px{width:26px;height:26px;display:grid;place-items:center;font-family:'JetBrains Mono';font-size:9px;font-weight:600;border-radius:3px}
+  .legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:4px}
+  .legend .sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--ink);vertical-align:-2px;margin-right:4px}
+  .feat-bars{display:flex;align-items:flex-end;gap:3px;height:90px;width:100%;max-width:320px;background:#f7f5ee;border:2px solid var(--line);border-radius:12px;padding:8px}
+  .feat-bars .fb{flex:1;background:linear-gradient(var(--coral),var(--amber));border-radius:3px 3px 0 0;transition:height .18s}
+  .wt-nav{display:flex;gap:10px;margin-top:16px}
+  .wt-nav .btn{flex:1}
+  .code-num{font-family:'JetBrains Mono';background:#1f2a52;color:#cfe3ff;padding:2px 7px;border-radius:6px;font-size:12px}
+
+  /* ===== sound training ===== */
+  .snd-meter{height:60px;background:#0e1430;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:flex-end;gap:2px;padding:6px;overflow:hidden}
+  .snd-meter .sb{flex:1;background:linear-gradient(var(--amber),var(--coral));border-radius:2px 2px 0 0;height:4%;transition:height .08s}
+  .rec-ring{width:14px;height:14px;border-radius:50%;background:var(--coral);display:inline-block;margin-right:7px;vertical-align:-1px}
+  .rec-ring.live{animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.35;transform:scale(.8)}}
+
+  /* ===== trained classes ===== */
+  .classlist{display:flex;flex-direction:column;gap:10px}
+  .class-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:#fff}
+  .class-row .swatch{width:42px;height:42px;border-radius:10px;object-fit:cover;border:2px solid var(--ink);background:#eee;flex:0 0 auto}
+  .class-row .meta{flex:1;min-width:0}
+  .class-row .meta .name{font-family:'Fredoka';font-weight:600;font-size:15px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .class-row .meta .count{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .empty-hint{text-align:center;color:var(--ink-soft);font-weight:700;padding:18px;font-size:14px}
+
+  /* ===== live verdict ===== */
+  .readout{text-align:center;padding:6px 0 4px}
+  .readout .verdict{font-family:'Fredoka';font-weight:700;font-size:28px;line-height:1.1}
+  .readout .verdict.danger{color:var(--coral)}
+  .readout .verdict.safe{color:var(--forest)}
+  .readout .conf{font-weight:800;color:var(--ink-soft);margin-top:4px;font-size:13px}
+  .barwrap{height:12px;border-radius:999px;background:#eee;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+  .bar{height:100%;width:0;background:var(--forest);transition:width .25s,background .25s;border-radius:999px}
+  .moderow{display:flex;gap:10px;margin-top:12px}
+  .modechip{flex:1;border:2px solid var(--line);border-radius:11px;padding:8px;text-align:center;font-weight:800;font-size:12px;color:var(--ink-soft);background:#fff}
+  .modechip b{display:block;font-family:'Fredoka';font-size:13px;color:var(--ink);margin-top:2px}
+  .modechip.hot{border-color:var(--coral);background:#fff1f1;color:var(--coral)}
+
+  /* ===== forest diorama ===== */
+  .diorama{margin-top:14px}
+  .road-svg{width:100%;display:block;border-radius:14px;border:2px solid var(--ink)}
+  .legend2{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .legend2 i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+  /* ===== admin / forms ===== */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-family:'Fredoka';font-weight:500;font-size:14px;margin-bottom:7px}
+  input[type=range]{width:100%;accent-color:var(--coral)}
+  .anglebox{min-width:54px;text-align:center;font-family:'JetBrains Mono';font-weight:600;background:var(--ink);color:#fff;padding:5px 8px;border-radius:8px;font-size:13px;float:right}
+  input[type=text],input[type=password]{width:100%;padding:11px 13px;border:2px solid var(--line);border-radius:11px;font-family:'Nunito';font-weight:600;font-size:14px;color:var(--ink);background:#fff}
+  input:focus{outline:none;border-color:var(--ink)}
+  .lockwall{text-align:center;padding:38px 22px}
+  .lockwall .ico{font-size:40px}.lockwall h3{margin:10px 0 4px;font-size:20px}
+  .lockwall p{color:var(--ink-soft);font-weight:600;margin:0 0 16px}
+
+  /* ===== serial console ===== */
+  .term{background:#0e1430;color:#cfe3ff;font-family:'JetBrains Mono';font-size:12.5px;padding:14px;max-height:190px;overflow:auto;line-height:1.6}
+  .term .tx{color:#ffd27a}.term .rx{color:#8ff0bd}.term .sys{color:#7e8ec9}
+
+  /* ===== modal / toast ===== */
+  .modal-back{position:fixed;inset:0;background:rgba(20,26,56,.5);backdrop-filter:blur(3px);display:none;place-items:center;z-index:80;padding:20px}
+  .modal-back.show{display:grid}
+  .modal{background:#fff;border:2px solid var(--ink);border-radius:18px;box-shadow:8px 8px 0 var(--ink);max-width:440px;width:100%;padding:22px;animation:pop .18s ease}
+  @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h3{font-size:20px;margin-bottom:4px}.modal p{color:var(--ink-soft);font-weight:600;margin:0 0 16px;font-size:14px}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+  .chip{border:2px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:12.5px;background:#fff;color:var(--ink-soft);font-family:'Nunito'}
+  .chip.sel{border-color:var(--ink);background:var(--ink);color:#fff}
+  .seg{display:flex;gap:8px;margin-top:10px}
+  .seg button{flex:1;border:2px solid var(--line);border-radius:11px;padding:9px;font-weight:600;font-size:13px;background:#fff;color:var(--ink-soft)}
+  .seg button.sel{border-color:var(--ink);background:var(--ink);color:#fff}
+  .err{color:var(--coral);font-weight:800;font-size:13px;min-height:18px;margin-top:8px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-family:'Fredoka';
+    font-weight:600;font-size:14px;padding:11px 18px;border-radius:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:90}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .loading-banner{display:flex;align-items:center;gap:10px;background:#fff8e6;border:2px solid var(--amber);border-radius:12px;padding:11px 14px;font-weight:700;font-size:13.5px;margin-bottom:14px}
+  .spin{width:16px;height:16px;border:3px solid #e7e2d6;border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex:0 0 auto}
+
+  /* ===== footer ===== */
+  .site-footer{position:relative;border-top:3px solid var(--coral);background:linear-gradient(135deg,#1F2A52 0%,#262f5c 55%,#1a2347 100%);color:#fff;margin-top:26px;overflow:hidden}
+  .site-footer::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 200px at 15% 0%, rgba(249,97,103,.16) 0%, transparent 60%),radial-gradient(600px 200px at 85% 100%, rgba(255,194,51,.12) 0%, transparent 60%);pointer-events:none}
+  .foot-inner{position:relative;max-width:1180px;margin:0 auto;padding:26px 20px 24px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .foot-paw{font-size:18px;margin-bottom:2px;opacity:.9}
+  .foot-main{font-family:'Fredoka';font-weight:600;font-size:15.5px;letter-spacing:.01em}
+  .foot-main b{color:var(--amber)}
+  .foot-sub{font-family:'Nunito';font-weight:700;font-size:12.5px;color:#b9c0e0;letter-spacing:.02em}
+  .foot-line{width:46px;height:3px;border-radius:999px;background:linear-gradient(90deg,var(--coral),var(--amber));margin:10px 0 2px}
+
+  @media(hover:none){.btn:hover,.tab:hover{transform:none}}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="nav-brand">
+    <!-- School badge: replace this div with <img class="logo-img" src="your-school-logo.png" alt="School logo"> once you have the PNG -->
+    <div class="logo-badge">P</div>
+    <div class="school-txt">
+      <div class="sname">Pallavi International School, Gandipet</div>
+      <div class="spow">Powered by <b>CognoSpace</b></div>
+    </div>
+  </div>
+  <div class="nav-center">
+    <span class="app-title">🐾 Animal Detection</span>
+    <span class="app-sub">Crossing Safety System</span>
+  </div>
+  <div class="nav-right">
+    <span class="stat-pill" id="serialPill"><span class="dot"></span><span id="serialPillText">ESP32 not connected</span></span>
+    <button class="btn-connect" id="connectBtn">Connect ESP32</button>
+    <span class="nav-sep"></span>
+    <button class="btn-admin" id="adminNavBtn">⚙ Admin <span id="adminLockIcon">🔒</span></button>
+    <span class="nav-sep"></span>
+    <button class="btn-endsession" id="endSessionBtn">⏹ End Session</button>
+  </div>
+</nav>
+
+<div class="tabs">
+  <button class="tab training active" data-mode="training"><span class="tg">🎓</span> Training mode</button>
+  <button class="tab live" data-mode="live"><span class="tg">📡</span> Live mode</button>
+  <div class="tabs-logos">
+    <!-- Logo slot 1 — drop in your PNG and just change the src below -->
+    <a class="logo-box" href="https://www.example.com" target="_blank" rel="noopener noreferrer" title="Visit website">
+      <img class="brand-logo" id="logoSlot1" src="pallavi.png" alt="Logo 1" />
+    </a>
+    <!-- Logo slot 2 — drop in your PNG and just change the src below -->
+    <a class="logo-box" href="https://www.example.org" target="_blank" rel="noopener noreferrer" title="Visit website">
+      <img class="brand-logo" id="logoSlot2" src="cognospace.png" alt="Logo 2" />
+    </a>
+  </div>
+</div>
+
+<main>
+  <div id="modelBanner" class="loading-banner"><span class="spin"></span> Loading the vision model… this runs once and stays in your browser.</div>
+
+  <!-- ===================== TRAINING ===================== -->
+  <section id="view-training">
+    <div class="grid">
+      <!-- camera / capture -->
+      <div class="card">
+        <div class="head"><span class="eyebrow">Teach by sight</span><h3>Show an animal to the camera</h3></div>
+        <div class="body">
+          <div class="stage" id="stageTrain">
+            <span class="live-badge" id="trainBadge"><span class="b"></span> Capturing</span>
+            <div class="empty" id="stageTrainEmpty">Turn on the camera or upload a photo to begin.</div>
+          </div>
+          <div class="cam-controls">
+            <button class="btn ink" id="camToggleTrain">Start camera</button>
+            <button class="btn ghost" id="camSwitchTrain" disabled>↺ Switch camera</button>
+            <button class="btn ghost" id="uploadBtnTrain">Upload image</button>
+            <input type="file" id="fileTrain" accept="image/*" class="hide" />
+          </div>
+          <div class="divider"></div>
+          <button class="btn coral" id="captureBtn" style="width:100%;font-size:16px;padding:13px" disabled>Capture & analyse →</button>
+          <p class="hint" style="margin:10px 0 0">Capture or upload, then walk through how the computer actually sees the image, step by step.</p>
+        </div>
+      </div>
+
+      <!-- detailed walkthrough -->
+      <div class="card">
+        <div class="head"><span class="eyebrow">How the computer sees</span><h3>Processing walkthrough</h3></div>
+        <div class="body">
+          <div class="step-dots" id="stepDots"></div>
+          <div id="wtContent"><div class="wt-empty">📷 Capture or upload an image on the left to start the walkthrough.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- sound training -->
+    <div class="card mt">
+      <div class="head"><span class="eyebrow">Teach by sound</span><h3>🔊 Train animals by their call</h3><span class="spacer"></span><span class="tag ink" id="micState">mic off</span></div>
+      <div class="body">
+        <div class="grid">
+          <div>
+            <p class="hint" style="margin-top:0">Turn on the microphone, play or make the animal's sound, then hold Record for 7 seconds. The system averages the sound's frequency fingerprint over that window — pair it with the same name you used for its picture.</p>
+            <div class="snd-meter" id="sndMeter"></div>
+            <div class="cam-controls">
+              <button class="btn ink" id="micToggleTrain">Start microphone</button>
+              <button class="btn coral" id="recBtn" disabled>● Record 7s sound</button>
+            </div>
+          </div>
+          <div>
+            <div class="step-badge">What happens</div>
+            <p class="hint" style="margin-top:6px">1. Microphone captures the sound wave.<br>2. It's split into frequency bands (a spectrum).<br>3. The averaged spectrum becomes a numeric fingerprint.<br>4. That fingerprint is stored under the animal's name.<br>In Live mode the system listens and matches new sounds to the closest fingerprint.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- trained classes -->
+    <div class="card mt">
+      <div class="head"><h3>Trained animals</h3><span class="spacer"></span><span class="tag ink" id="totalSamples">0 samples</span></div>
+      <div class="body">
+        <div class="classlist" id="classList">
+          <div class="empty-hint">No animals trained yet. Tip: also train an <b>“Empty road”</b> class and mark it <b>Safe</b> so the system knows when it's clear.</div>
+        </div>
+        <div class="divider"></div>
+        <button class="btn ghost" id="resetTrain" style="width:100%">Clear all training</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE ===================== -->
+  <section id="view-live" class="hide">
+    <div class="grid">
+      <div class="card">
+        <div class="head"><span class="eyebrow">Watching the road</span><h3>Live detection</h3></div>
+        <div class="body">
+          <div class="stage" id="stageLive">
+            <span class="live-badge show" id="liveBadge"><span class="b"></span> LIVE</span>
+            <button class="stage-remove hide" id="removeImgLive" title="Remove uploaded image">✕</button>
+            <div class="empty" id="stageLiveEmpty">Start the camera, upload an image, or use sound to begin.</div>
+          </div>
+          <div class="cam-controls">
+            <button class="btn ink" id="camToggleLive">Start camera</button>
+            <button class="btn ghost" id="camSwitchLive" disabled>↺ Switch camera</button>
+            <button class="btn ghost" id="uploadBtnLive">Upload image</button>
+            <button class="btn ghost" id="removeBtnLive" disabled>✕ Remove image</button>
+            <button class="btn ghost" id="micToggleLive">🎙 Listen for sound</button>
+            <input type="file" id="fileLive" accept="image/*" class="hide" />
+          </div>
+          <div class="divider"></div>
+          <div id="liveMicPanel" style="display:none">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+              <span id="liveMicDot" style="width:11px;height:11px;border-radius:50%;background:#54608a;flex:0 0 auto;transition:background .2s;box-shadow:0 0 0 3px rgba(46,125,85,.0)"></span>
+              <span class="hint" style="margin:0" id="liveMicLabel">Listening — waiting for sound…</span>
+            </div>
+            <div class="snd-meter" id="liveSndMeter"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field" style="margin-bottom:0">
+            <label>Detection sensitivity <span class="hint" id="threshLabel" style="float:right">70%</span></label>
+            <input type="range" id="thresh" min="40" max="95" value="70" />
+            <p class="hint" style="margin:8px 0 0">An animal must be recognised above this confidence (by sight or sound) before the gates close. Anything unknown or below it keeps the road open.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h3>Road status</h3><span class="spacer"></span><span class="tag green" id="liveSerialTag">offline</span></div>
+        <div class="body">
+          <div class="readout">
+            <div class="verdict safe" id="verdict">Road clear</div>
+            <div class="conf" id="verdictSub">Waiting for input…</div>
+            <div class="barwrap"><div class="bar" id="confBar"></div></div>
+            <div class="moderow">
+              <div class="modechip" id="chipImg">SIGHT<b id="chipImgV">—</b></div>
+              <div class="modechip" id="chipSnd">SOUND<b id="chipSndV">—</b></div>
+            </div>
+          </div>
+
+          <div class="diorama">
+            <svg class="road-svg" viewBox="0 0 400 240" id="roadSvg" aria-label="forest road">
+              <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#cdeccf"/><stop offset="1" stop-color="#bfe3c9"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="400" height="240" fill="url(#sky)"/>
+
+              <!-- forest top -->
+              <g id="forestTop"></g>
+
+              <!-- road surface -->
+              <rect x="0" y="92" width="400" height="70" fill="#3a3f4d"/>
+              <!-- road dashes -->
+              <g fill="#ffd95e">
+                <rect x="14"  y="123" width="30" height="7" rx="3"/>
+                <rect x="78"  y="123" width="30" height="7" rx="3"/>
+                <rect x="142" y="123" width="30" height="7" rx="3"/>
+                <rect x="206" y="123" width="30" height="7" rx="3"/>
+                <rect x="270" y="123" width="30" height="7" rx="3"/>
+                <rect x="334" y="123" width="30" height="7" rx="3"/>
+              </g>
+
+              <!-- forest bottom -->
+              <g id="forestBot"></g>
+
+              <!-- animal on road -->
+              <g id="animalIcon" opacity="0"><text x="200" y="138" font-size="30" text-anchor="middle">🦌</text></g>
+
+              <!--
+                GATE A — LEFT side (START).
+                Post sits left of road. Pivot at (72, 105) — mid-road-height on left edge.
+                Arm is drawn pointing RIGHT (0°) from pivot — this is the CLOSED position.
+                OPEN  = -180° (pointing left, fully folded back)
+                CLOSED =   0° (pointing right across road)
+                Sweeps 180° clockwise through vertical and into road.
+              -->
+              <!-- Gate A post -->
+              <rect x="66" y="60" width="12" height="60" rx="3" fill="#e8e0d0" stroke="#1F2A52" stroke-width="1.5"/>
+              <circle cx="72" cy="105" r="7" fill="#1F2A52"/>
+              <circle cx="72" cy="105" r="4" fill="#9aa0ab"/>
+              <!-- Arm A: drawn from pivot rightward — rotate around (72,105) -->
+              <g id="armA" transform="rotate(-180,72,105)">
+                <rect x="72" y="102" width="200" height="6" rx="3" fill="#F96167"/>
+                <rect x="94"  y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="130" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="166" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="202" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="268" y="100" width="6" height="10" rx="2" fill="#7a1f23"/>
+              </g>
+
+              <!--
+                GATE B — RIGHT side (END).
+                Post sits right of road. Pivot at (328, 105).
+                Arm drawn pointing LEFT from pivot — CLOSED position.
+                OPEN  = 180° (pointing right, folded back)
+                CLOSED =  0° (pointing left across road)
+              -->
+              <!-- Gate B post -->
+              <rect x="322" y="60" width="12" height="60" rx="3" fill="#e8e0d0" stroke="#1F2A52" stroke-width="1.5"/>
+              <circle cx="328" cy="105" r="7" fill="#1F2A52"/>
+              <circle cx="328" cy="105" r="4" fill="#9aa0ab"/>
+              <!-- Arm B: drawn from pivot leftward — rotate around (328,105) -->
+              <g id="armB" transform="rotate(180,328,105)">
+                <rect x="128" y="102" width="200" height="6" rx="3" fill="#F96167"/>
+                <rect x="210" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="174" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="138" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="248" y="102" width="18" height="6" fill="#fff" rx="1"/>
+                <rect x="126" y="100" width="6" height="10" rx="2" fill="#7a1f23"/>
+              </g>
+
+              <!-- Labels -->
+              <text x="72"  y="182" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">START</text>
+              <text x="328" y="182" font-size="9" text-anchor="middle" fill="#1F2A52" font-family="Nunito" font-weight="800">END</text>
+
+              <!-- 4-digit display -->
+              <g id="tmDisplay" transform="translate(150,188)">
+                <rect x="0" y="0" width="100" height="34" rx="6" fill="#11161f" stroke="#1F2A52" stroke-width="2"/>
+                <text id="tmText" x="50" y="24" font-size="20" text-anchor="middle" fill="#7CFC9A" font-family="JetBrains Mono" font-weight="600">GO</text>
+              </g>
+
+              <!-- buzzer -->
+              <g id="alarm" opacity="0">
+                <text x="192" y="228" font-size="11" fill="#1F2A52" font-family="Nunito" font-weight="800">🔔</text>
+              </g>
+
+              <!-- Gate A LEDs -->
+              <circle id="ledAred" cx="54"  cy="200" r="7" fill="#F96167" opacity="0"/>
+              <circle id="ledAgrn" cx="68"  cy="200" r="7" fill="#2E7D55" opacity="1"/>
+              <!-- Gate B LEDs -->
+              <circle id="ledBred" cx="332" cy="200" r="7" fill="#F96167" opacity="0"/>
+              <circle id="ledBgrn" cx="346" cy="200" r="7" fill="#2E7D55" opacity="1"/>
+              <!-- LED labels -->
+              <text x="61"  y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate A</text>
+              <text x="339" y="216" font-size="7" text-anchor="middle" fill="#54608a" font-family="Nunito" font-weight="700">Gate B</text>
+            </svg>
+            <div class="legend2">
+              <span><i style="background:#F96167"></i>Red LED (danger)</span>
+              <span><i style="background:#2E7D55"></i>Green LED (safe)</span>
+              <span><i style="background:#FFC233"></i>Animal on road</span>
+            </div>
+          </div>
+          <p class="hint" id="liveOfflineHint" style="margin:14px 0 0">Connect the ESP32 to drive the real servos, buzzer, LED and 4-digit display.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ADMIN ===================== -->
+  <section id="view-admin" class="hide">
+    <div class="card" id="adminLocked">
+      <div class="lockwall">
+        <div class="ico">🔒</div><h3>Admin mode is locked</h3>
+        <p>Enter the admin password to configure the hardware.</p>
+        <button class="btn ink" id="unlockBtn">Enter password</button>
+      </div>
+    </div>
+    <div class="grid hide" id="adminPanel">
+      <div class="card">
+        <div class="head"><span class="eyebrow">Servo calibration</span><h3>Gate angles</h3></div>
+        <div class="body">
+          <p class="hint" style="margin-top:0">Set the open and closed angle for each gate servo. Saved on the board.</p>
+          <div class="divider"></div>
+          <h4 style="margin-bottom:12px;color:var(--coral)">Servo A · Road start</h4>
+          <div class="field"><label>Open angle <span class="anglebox" id="vAopen">92°</span></label><input type="range" id="Aopen" min="0" max="180" value="92"></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vAclose">7°</span></label><input type="range" id="Aclose" min="0" max="180" value="7"></div>
+          <div class="divider"></div>
+          <h4 style="margin-bottom:12px;color:var(--coral)">Servo B · Road end</h4>
+          <div class="field"><label>Open angle <span class="anglebox" id="vBopen">100°</span></label><input type="range" id="Bopen" min="0" max="180" value="100"></div>
+          <div class="field"><label>Closed angle <span class="anglebox" id="vBclose">12°</span></label><input type="range" id="Bclose" min="0" max="180" value="12"></div>
+          <div class="divider"></div>
+          <button class="btn coral" id="sendAngles" style="width:100%">Save angles to ESP32</button>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn ghost" id="testOpen" style="flex:1">Test open</button>
+            <button class="btn ghost" id="testClose" style="flex:1">Test close</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head"><span class="eyebrow">Display</span><h3>LCD 20×4 message</h3></div>
+        <div class="body">
+          <p class="hint" style="margin-top:0">Send up to 4 lines (20 chars each) to both I²C LCDs.</p>
+          <div class="divider"></div>
+          <div class="field"><input type="text" id="lcdLine1" maxlength="20" placeholder="Line 1 (max 20 chars)"></div>
+          <div class="field"><input type="text" id="lcdLine2" maxlength="20" placeholder="Line 2"></div>
+          <div class="field"><input type="text" id="lcdLine3" maxlength="20" placeholder="Line 3"></div>
+          <div class="field"><input type="text" id="lcdLine4" maxlength="20" placeholder="Line 4"></div>
+          <button class="btn coral" id="sendLcd" style="width:100%">Send to LCD</button>
+          <div class="divider"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn ghost" id="lcdClear" style="flex:1">Clear LCD</button>
+            <button class="btn ghost" id="lcdDefault" style="flex:1">Default message</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn ghost" id="silence" style="flex:1">Open gates (GO)</button>
+          </div>
+          <button class="btn ink" id="logoutAdmin" style="width:100%;margin-top:14px">Lock admin mode</button>
+        </div>
+      </div>
+    </div>
+    <!-- WS2812B LED Strip control — full width below grid -->
+    <div class="card" id="neoCard" style="margin-top:18px">
+      <div class="head"><span class="eyebrow">WS2812B Strip</span><h3>💡 Addressable LED Strip</h3></div>
+      <div class="body">
+        <p class="hint" style="margin-top:0">Control the WS2812B LED strip connected to the ESP32.</p>
+        <div class="divider"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:0 0 auto">
+            <label style="font-family:'Fredoka';font-weight:500;font-size:14px;display:block;margin-bottom:7px">Strip colour</label>
+            <input type="color" id="neoColorPicker" value="#ffffff" style="width:60px;height:44px;border:2px solid var(--ink);border-radius:10px;cursor:pointer;padding:2px">
+          </div>
+          <button class="btn coral" id="neoOn" style="flex:1;min-width:120px">Turn ON</button>
+          <button class="btn ghost" id="neoOff" style="flex:1;min-width:120px">Turn OFF</button>
+          <button class="btn ink" id="neoColor" style="flex:1;min-width:120px">Set Colour</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn ghost sm" onclick="setNeoPreset('#ff0000')">🔴 Red</button>
+          <button class="btn ghost sm" onclick="setNeoPreset('#00ff00')">🟢 Green</button>
+          <button class="btn ghost sm" onclick="setNeoPreset('#0000ff')">🔵 Blue</button>
+          <button class="btn ghost sm" onclick="setNeoPreset('#ffffff')">⬜ White</button>
+          <button class="btn ghost sm" onclick="setNeoPreset('#ffa500')">🟠 Orange</button>
+          <button class="btn ghost sm" onclick="setNeoPreset('#ff00ff')">🟣 Purple</button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- serial console -->
+  <div class="card console mt">
+    <div class="head"><h3>Serial console</h3><span class="spacer"></span><button class="btn sm ghost" id="clearTerm">Clear</button></div>
+    <div class="body" style="padding:0"><div class="term" id="term"><div class="sys">// Connect the ESP32 to see serial traffic here.</div></div></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="foot-inner">
+    <span class="foot-paw">🐾</span>
+    <div class="foot-main">Designed &amp; developed by <b>CognoSpace</b></div>
+    <div class="foot-line"></div>
+    <div class="foot-sub">for Pallavi International School · Gandipet</div>
+  </div>
+</footer>
+
+<!-- name modal -->
+<div class="modal-back" id="nameModal">
+  <div class="modal">
+    <h3 id="nameTitle">Name this sample</h3>
+    <p id="nameDesc">Give it a name so the system can group it.</p>
+    <input type="text" id="animalName" placeholder="e.g. Tiger, Deer, Empty road" maxlength="22" />
+    <div class="chips" id="nameChips"></div>
+    <div class="seg">
+      <button id="kindAnimal" class="sel">🐾 Animal · triggers gates</button>
+      <button id="kindSafe">✅ Safe · no action</button>
+    </div>
+    <div class="err" id="nameErr"></div>
+    <div class="actions">
+      <button class="btn ghost" id="cancelName">Cancel</button>
+      <button class="btn coral" id="confirmName">Add sample</button>
+    </div>
+  </div>
+</div>
+
+<!-- password modal -->
+<div class="modal-back" id="pwModal">
+  <div class="modal">
+    <h3>Admin password</h3><p>Restricted area — hardware configuration.</p>
+    <input type="password" id="pwInput" placeholder="Enter password" />
+    <div class="err" id="pwErr"></div>
+    <div class="actions">
+      <button class="btn ghost" id="cancelPw">Cancel</button>
+      <button class="btn ink" id="submitPw">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   WildGuard — Animal Crossing Detection
+   Pallavi International School, Gandipet · Powered by CognoSpace
+   ========================================================================= */
+const ADMIN_PASSWORD = "12345678";
+const $ = id => document.getElementById(id);
+const escapeHtml = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = (()=>{ const el=$('toast'); let t; return m=>{el.textContent=m;el.classList.add('show');clearTimeout(t);t=setTimeout(()=>el.classList.remove('show'),2200);}; })();
+
+/* ===================================================================
+   SERIAL
+   =================================================================== */
+const Serial = {
+  port:null, writer:null, reader:null, connected:false, lineBuf:"",
+  supported(){ return 'serial' in navigator; },
+  log(text, cls='sys'){ const term=$('term'); const d=document.createElement('div'); d.className=cls; d.textContent=text; term.appendChild(d); term.scrollTop=term.scrollHeight; },
+  async connect(){
+    if(!this.supported()){ toast("Web Serial needs Chrome or Edge (https/localhost)."); this.log("// Web Serial unavailable.",'sys'); return; }
+    try{
+      this.port = await navigator.serial.requestPort();
+      await this.port.open({ baudRate:115200 });
+      this.writer = this.port.writable.getWriter();
+      this.connected = true; this.updateUI();
+      this.log("// Connected at 115200 baud.",'sys');
+      this.readLoop(); Admin.pushAngles(true);
+    }catch(err){ this.log("// Connection cancelled/failed: "+err.message,'sys'); }
+  },
+  async readLoop(){
+    const dec=new TextDecoderStream(); this.port.readable.pipeTo(dec.writable).catch(()=>{});
+    this.reader=dec.readable.getReader();
+    try{
+      while(true){ const {value,done}=await this.reader.read(); if(done) break;
+        this.lineBuf+=value; let i;
+        while((i=this.lineBuf.indexOf("\n"))>=0){ const line=this.lineBuf.slice(0,i).trim(); this.lineBuf=this.lineBuf.slice(i+1); if(line) this.log("← "+line,'rx'); }
+      }
+    }catch(e){}
+    this.disconnect(true);
+  },
+  async send(cmd){
+    if(!this.connected||!this.writer){ this.log("→ "+cmd+"  (offline)",'sys'); return; }
+    try{ await this.writer.write(new TextEncoder().encode(cmd+"\n")); this.log("→ "+cmd,'tx'); }
+    catch(e){ this.log("// write failed: "+e.message,'sys'); }
+  },
+  async disconnect(silent){
+    try{ if(this.reader){ await this.reader.cancel(); this.reader=null; } }catch(e){}
+    try{ if(this.writer){ this.writer.releaseLock(); this.writer=null; } }catch(e){}
+    try{ if(this.port){ await this.port.close(); } }catch(e){}
+    this.port=null; this.connected=false; this.updateUI(); if(!silent) this.log("// Disconnected.",'sys');
+  },
+  updateUI(){
+    const pill=$('serialPill'), txt=$('serialPillText'), btn=$('connectBtn');
+    if(this.connected){ pill.classList.add('on'); txt.textContent="ESP32 connected"; btn.textContent="Disconnect"; btn.classList.add('disc');
+      $('liveSerialTag').textContent="online"; $('liveSerialTag').className="tag green"; $('liveOfflineHint').classList.add('hide'); }
+    else{ pill.classList.remove('on'); txt.textContent="ESP32 not connected"; btn.textContent="Connect ESP32"; btn.classList.remove('disc');
+      $('liveSerialTag').textContent="offline"; $('liveSerialTag').className="tag ink"; $('liveOfflineHint').classList.remove('hide'); }
+  }
+};
+$('connectBtn').onclick=()=>Serial.connected?Serial.disconnect():Serial.connect();
+$('clearTerm').onclick=()=>{ $('term').innerHTML=''; Serial.log("// cleared",'sys'); };
+
+/* ===================================================================
+   CAMERA (shared)
+   =================================================================== */
+const Camera = {
+  stream:null, video:null, devices:[], curIndex:0, facing:'environment', owner:null,
+  async listDevices(){ try{ const all=await navigator.mediaDevices.enumerateDevices(); this.devices=all.filter(d=>d.kind==='videoinput'); }catch(e){ this.devices=[]; } },
+  async start(owner){
+    this.owner=owner; await this.listDevices();
+    const c = this.devices.length ? { video:{ deviceId:{ exact:this.devices[this.curIndex%this.devices.length].deviceId } } } : { video:{ facingMode:this.facing } };
+    try{ this.stop(false); this.stream=await navigator.mediaDevices.getUserMedia(c); }
+    catch(e){ try{ this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this.facing}}); }catch(e2){ toast("Could not open camera: "+e2.message); return false; } }
+    await this.listDevices(); this.attach(owner); return true;
+  },
+  attach(owner){
+    const stageId = owner==='train'?'stageTrain':'stageLive'; const stage=$(stageId);
+    let v=stage.querySelector('video');
+    if(!v){ v=document.createElement('video'); v.autoplay=true; v.playsInline=true; v.muted=true; stage.insertBefore(v,stage.firstChild); }
+    v.srcObject=this.stream; this.video=v;
+    const e=$(stageId+'Empty'); if(e) e.style.display='none';
+    const old=stage.querySelector('img.shot'); if(old) old.remove();
+  },
+  async switch(){
+    if(this.devices.length>1) this.curIndex=(this.curIndex+1)%this.devices.length;
+    else this.facing=this.facing==='environment'?'user':'environment';
+    await this.start(this.owner); toast("Camera switched");
+  },
+  stop(clearUI=true){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } if(clearUI&&this.video) this.video.srcObject=null; },
+  isOn(){ return !!this.stream; },
+  grabCanvas(size=224){
+    const c=document.createElement('canvas'); c.width=size; c.height=size; const ctx=c.getContext('2d');
+    const s=this.video, sw=s.videoWidth, sh=s.videoHeight, m=Math.min(sw,sh);
+    ctx.drawImage(s,(sw-m)/2,(sh-m)/2,m,m,0,0,size,size); return c;
+  }
+};
+
+/* ===================================================================
+   MODEL (MobileNet + image KNN + sound KNN)
+   =================================================================== */
+const Model = {
+  net:null, imgKnn:null, sndKnn:null, ready:false,
+  meta:{},   // name -> {kind, thumb, img, snd}
+  async load(){
+    this.imgKnn=knnClassifier.create(); this.sndKnn=knnClassifier.create();
+    this.net=await mobilenet.load({version:2, alpha:1.0});
+    this.ready=true; $('modelBanner').classList.add('hide');
+    if(Camera.isOn()&&Camera.owner==='train') $('captureBtn').disabled=false;
+    toast("Vision model ready");
+  },
+  embed(canvasOrImg){ return tf.tidy(()=>this.net.infer(tf.browser.fromPixels(canvasOrImg), true)); },
+  addImage(canvas, name){ const e=this.embed(canvas); this.imgKnn.addExample(e, name); e.dispose(); },
+  async classifyImage(canvas){ if(this.imgKnn.getNumClasses()===0) return null; const e=this.embed(canvas); const r=await this.imgKnn.predictClass(e,5); e.dispose(); return r; },
+  addSound(vec, name){ const t=tf.tensor(vec); this.sndKnn.addExample(t, name); t.dispose(); },
+  async classifySound(vec){ if(this.sndKnn.getNumClasses()===0) return null; const t=tf.tensor(vec); const r=await this.sndKnn.predictClass(t,5); t.dispose(); return r; },
+  imgCounts(){ return this.imgKnn.getClassExampleCount?this.imgKnn.getClassExampleCount():{}; },
+  sndCounts(){ return this.sndKnn.getClassExampleCount?this.sndKnn.getClassExampleCount():{}; },
+  ensureMeta(name,kind){ if(!this.meta[name]) this.meta[name]={kind:kind||'animal',thumb:null,img:0,snd:0}; return this.meta[name]; },
+  names(){ return Object.keys(this.meta); }
+};
+
+/* ===================================================================
+   NAME MODAL (shared by image + sound)
+   =================================================================== */
+let pending=null; // {type:'image'|'sound', canvas?, thumb?, vec?}
+let pendingKind='animal';
+function openNameModal(p){
+  pending=p; pendingKind='animal';
+  $('kindAnimal').classList.add('sel'); $('kindSafe').classList.remove('sel');
+  $('animalName').value=''; $('nameErr').textContent='';
+  $('nameTitle').textContent = p.type==='sound' ? 'Name this sound' : 'Name this animal';
+  $('nameDesc').textContent = p.type==='sound' ? 'Pair it with the same name as the animal\u2019s picture, or make a new one.' : 'The 7 image samples will be added to this class.';
+  $('confirmName').textContent = p.type==='sound' ? 'Add sound' : 'Add samples';
+  // existing-name chips
+  const chips=$('nameChips'); chips.innerHTML='';
+  Model.names().forEach(n=>{ const c=document.createElement('button'); c.className='chip'; c.textContent=n; c.onclick=()=>{ $('animalName').value=n; const m=Model.meta[n]; setKind(m&&m.kind==='safe'?'safe':'animal'); }; chips.appendChild(c); });
+  $('nameModal').classList.add('show'); setTimeout(()=>$('animalName').focus(),50);
+}
+function setKind(k){ pendingKind=k; $('kindAnimal').classList.toggle('sel',k==='animal'); $('kindSafe').classList.toggle('sel',k==='safe'); }
+$('kindAnimal').onclick=()=>setKind('animal');
+$('kindSafe').onclick=()=>setKind('safe');
+$('cancelName').onclick=()=>{ $('nameModal').classList.remove('show'); pending=null; };
+$('confirmName').onclick=()=>{
+  const name=$('animalName').value.trim();
+  if(!name){ $('nameErr').textContent="Please enter a name."; return; }
+  if(!pending){ $('nameModal').classList.remove('show'); return; }
+  const meta=Model.ensureMeta(name,pendingKind); meta.kind=pendingKind;
+  if(pending.type==='image'){
+    const variants=augment(pending.canvas);
+    variants.forEach(v=>Model.addImage(v,name));
+    meta.img+=variants.length; if(pending.thumb) meta.thumb=pending.thumb;
+    toast(`Added ${variants.length} image samples to “${name}”`);
+  }else{
+    Model.addSound(pending.vec,name); meta.snd+=1;
+    toast(`Added a sound sample to “${name}”`);
+  }
+  $('nameModal').classList.remove('show'); pending=null; renderClasses();
+};
+
+/* ===================================================================
+   TRAINING — image capture + detailed walkthrough
+   =================================================================== */
+const TOTAL_STEPS=6;
+let wt={ dataURL:null, canvas:null, step:0, embedding:null };
+
+function startWalkthrough(canvas, dataURL){
+  wt={ dataURL, canvas, step:0, embedding:null };
+  renderDots(); renderStep();
+}
+function renderDots(){
+  const d=$('stepDots'); d.innerHTML='';
+  for(let i=0;i<TOTAL_STEPS;i++){ const s=document.createElement('div'); s.className='step-dot'+(i<wt.step?' done':'')+(i===wt.step?' current':''); d.appendChild(s); }
+}
+function wtNav(){
+  return `<div class="wt-nav">
+    <button class="btn ghost" id="wtBack" ${wt.step===0?'style="visibility:hidden"':''}>← Back</button>
+    <button class="btn coral" id="wtNext">${wt.step===TOTAL_STEPS-1?'🏷️ Name & save':'Next →'}</button></div>`;
+}
+function bindNav(){
+  const b=$('wtBack'), n=$('wtNext');
+  if(b) b.onclick=()=>{ if(wt.step>0){ wt.step--; renderDots(); renderStep(); } };
+  if(n) n.onclick=()=>{
+    if(wt.step===TOTAL_STEPS-1){ openNameModal({type:'image',canvas:wt.canvas,thumb:wt.dataURL}); return; }
+    wt.step++; renderDots(); renderStep();
+  };
+}
+function renderStep(){
+  const c=$('wtContent');
+  switch(wt.step){
+    case 0: c.innerHTML=`<span class="step-badge">Step 1 of 6</span><div class="step-body"><h4>📷 Image capture</h4>
+      <p>A camera grabbed this picture. Every photo is built from millions of tiny coloured dots called <b>pixels</b>.</p>
+      <div class="step-visual"><img src="${wt.dataURL}" width="220" alt="capture"></div></div>${wtNav()}`; break;
+    case 1: c.innerHTML=`<span class="step-badge">Step 2 of 6</span><div class="step-body"><h4>🔢 Turn the picture into numbers</h4>
+      <p>Computers don't see pictures — they see <b>numbers</b>. Each pixel becomes a brightness value from <span class="code-num">0</span> (black) to <span class="code-num">255</span> (white).</p>
+      <div class="step-visual"><div class="pixel-grid" id="pixelGrid"></div>
+      <div class="legend"><span><span class="sw" style="background:#000"></span>0 = black</span><span><span class="sw" style="background:#fff"></span>255 = white</span></div></div></div>${wtNav()}`;
+      drawPixelGrid(8); break;
+    case 2: c.innerHTML=`<span class="step-badge">Step 3 of 6</span><div class="step-body"><h4>🧼 Preprocessing</h4>
+      <p>Before understanding it, the picture is tidied up — resized, brightness fixed and turned <b>grayscale</b>. A clean picture is easier to read.</p>
+      <div class="step-visual"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center">
+        <div><div class="hint" style="margin-bottom:6px">Original</div><img src="${wt.dataURL}" width="120"></div>
+        <div style="font-size:26px">➡️</div>
+        <div><div class="hint" style="margin-bottom:6px">Cleaned</div><canvas id="grayCanvas" width="120" height="120"></canvas></div>
+      </div></div></div>${wtNav()}`;
+      drawGray(); break;
+    case 3: c.innerHTML=`<span class="step-badge">Step 4 of 6</span><div class="step-body"><h4>🔍 Feature detection</h4>
+      <p>Now it hunts for important <b>patterns</b>: edges (where colours suddenly change), corners and shapes.</p>
+      <div class="step-visual"><canvas id="edgeCanvas" width="200" height="200"></canvas>
+      <div class="legend"><span>🔺 Shapes</span><span>📐 Corners</span><span>➰ Edges</span></div></div></div>${wtNav()}`;
+      drawEdges(); break;
+    case 4: c.innerHTML=`<span class="step-badge">Step 5 of 6</span><div class="step-body"><h4>🧠 Feature extraction</h4>
+      <p>All the clues become a list of numbers — a unique <b>fingerprint</b> for this image, made by the MobileNet neural network.</p>
+      <div class="step-visual"><div class="feat-bars" id="featBars"></div><p class="hint" id="extractMsg">Thinking… 🤔</p></div></div>${wtNav()}`;
+      runExtract(); break;
+    case 5: c.innerHTML=`<span class="step-badge">Step 6 of 6</span><div class="step-body"><h4>🏷️ Name &amp; save</h4>
+      <p>Give this animal a name. The system automatically studies it from <b>7 angles</b> (flips, zooms, brightness), so a couple of photos is enough.</p>
+      <div class="step-visual"><img src="${wt.dataURL}" width="120"></div>
+      <p class="hint" style="text-align:center">Press <b>Name &amp; save</b> below to store it.</p></div>${wtNav()}`;
+      break;
+  }
+  bindNav();
+}
+function drawPixelGrid(n){
+  const img=new Image();
+  img.onload=()=>{ const cv=document.createElement('canvas'); cv.width=n; cv.height=n; const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,n,n);
+    const data=ctx.getImageData(0,0,n,n).data; const grid=$('pixelGrid'); if(!grid) return;
+    grid.style.gridTemplateColumns=`repeat(${n},26px)`; grid.innerHTML='';
+    for(let i=0;i<n*n;i++){ const r=data[i*4],g=data[i*4+1],b=data[i*4+2]; const lum=Math.round(.299*r+.587*g+.114*b);
+      const cell=document.createElement('div'); cell.className='px'; cell.style.background=`rgb(${lum},${lum},${lum})`; cell.style.color=lum>140?'#1F2A52':'#fff'; cell.textContent=lum; grid.appendChild(cell); } };
+  img.src=wt.dataURL;
+}
+function drawGray(){
+  const img=new Image();
+  img.onload=()=>{ const cv=$('grayCanvas'); if(!cv) return; const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,120,120);
+    const d=ctx.getImageData(0,0,120,120), px=d.data;
+    for(let i=0;i<px.length;i+=4){ let l=.299*px[i]+.587*px[i+1]+.114*px[i+2]; l=Math.min(255,(l-128)*1.15+128); px[i]=px[i+1]=px[i+2]=l; }
+    ctx.putImageData(d,0,0); };
+  img.src=wt.dataURL;
+}
+function drawEdges(){
+  const img=new Image();
+  img.onload=()=>{ const cv=$('edgeCanvas'); if(!cv) return; const W=200,H=200,ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,W,H);
+    const src=ctx.getImageData(0,0,W,H).data; const gray=new Float32Array(W*H);
+    for(let i=0;i<W*H;i++) gray[i]=.299*src[i*4]+.587*src[i*4+1]+.114*src[i*4+2];
+    const out=ctx.createImageData(W,H);
+    for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ const i=y*W+x;
+      const gx=(gray[i-W+1]+2*gray[i+1]+gray[i+W+1])-(gray[i-W-1]+2*gray[i-1]+gray[i+W-1]);
+      const gy=(gray[i+W-1]+2*gray[i+W]+gray[i+W+1])-(gray[i-W-1]+2*gray[i-W]+gray[i-W+1]);
+      let m=Math.sqrt(gx*gx+gy*gy); m=m>90?255:Math.max(0,m*.5); const o=i*4, v=255-m; out.data[o]=out.data[o+1]=out.data[o+2]=v; out.data[o+3]=255; }
+    ctx.putImageData(out,0,0); };
+  img.src=wt.dataURL;
+}
+function runExtract(){
+  const bars=$('featBars'); const arr=[]; for(let i=0;i<30;i++){ const b=document.createElement('div'); b.className='fb'; b.style.height='10%'; bars.appendChild(b); arr.push(b); }
+  const wob=setInterval(()=>arr.forEach(b=>b.style.height=(10+Math.random()*80)+'%'),170);
+  (async()=>{
+    let waited=0; while(!Model.ready&&waited<8000){ await new Promise(r=>setTimeout(r,200)); waited+=200; }
+    clearInterval(wob);
+    if(!Model.ready){ $('extractMsg').textContent='⚠️ Model still loading — check your connection.'; arr.forEach(b=>b.style.height='10%'); return; }
+    const emb=Model.embed(wt.canvas); const vals=Array.from(await emb.data()); emb.dispose(); wt.embedding=vals;
+    arr.forEach((b,i)=>b.style.height=(8+Math.min(100,Math.abs(vals[i]||0)*16))+'%');
+    $('extractMsg').innerHTML='Done! Stored as a mathematical pattern. ✅';
+  })();
+}
+
+/* augmentation — 7 samples */
+function augment(src){
+  const out=[src];
+  const ops=[{f:1,z:1,b:1},{f:0,z:1.12,b:1},{f:1,z:1.12,b:1},{f:0,z:1,b:1.15},{f:0,z:1,b:.85},{f:1,z:1.06,b:1.1}];
+  for(const op of ops){ const c=document.createElement('canvas'); c.width=224; c.height=224; const ctx=c.getContext('2d');
+    ctx.filter=`brightness(${op.b})`; const w=224*op.z,h=224*op.z,ox=(224-w)/2,oy=(224-h)/2;
+    if(op.f){ ctx.translate(224,0); ctx.scale(-1,1); } ctx.drawImage(src,ox,oy,w,h); out.push(c); }
+  return out;
+}
+
+/* training camera buttons */
+$('camToggleTrain').onclick=async()=>{
+  if(Camera.isOn()&&Camera.owner==='train'){ Camera.stop(); $('stageTrainEmpty').style.display='grid'; $('camToggleTrain').textContent='Start camera'; $('camSwitchTrain').disabled=true; $('captureBtn').disabled=true; }
+  else{ const ok=await Camera.start('train'); if(ok){ $('camToggleTrain').textContent='Stop camera'; $('camSwitchTrain').disabled=false; $('captureBtn').disabled=!Model.ready; } }
+};
+$('camSwitchTrain').onclick=()=>Camera.switch();
+$('uploadBtnTrain').onclick=()=>$('fileTrain').click();
+$('fileTrain').onchange=e=>{ if(e.target.files[0]) loadTrainUpload(e.target.files[0]); };
+$('captureBtn').onclick=async()=>{
+  if(!Model.ready||!Camera.isOn()){ toast("Start the camera first"); return; }
+  $('trainBadge').classList.add('show');
+  const canvas=Camera.grabCanvas(224); $('trainBadge').classList.remove('show');
+  startWalkthrough(canvas, canvas.toDataURL('image/jpeg',.8));
+};
+function loadTrainUpload(file){
+  if(!Model.ready){ toast("Model still loading…"); return; }
+  const img=new Image();
+  img.onload=()=>{ const c=document.createElement('canvas'); c.width=224; c.height=224; const ctx=c.getContext('2d'); const m=Math.min(img.width,img.height);
+    ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,224,224);
+    if(!Camera.isOn()){ const stage=$('stageTrain'); const old=stage.querySelector('img.shot'); if(old) old.remove(); const prev=document.createElement('img'); prev.className='shot'; prev.src=c.toDataURL(); stage.insertBefore(prev,stage.firstChild); $('stageTrainEmpty').style.display='none'; }
+    startWalkthrough(c, c.toDataURL('image/jpeg',.8)); };
+  img.src=URL.createObjectURL(file);
+}
+
+/* ===================================================================
+   AUDIO — training + live (Web Audio + sound KNN)
+   =================================================================== */
+const Audio2 = {
+  ctx:null, analyser:null, source:null, stream:null, data:null, BINS:32, owner:null, raf:null,
+  async start(owner){
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+      this.source=this.ctx.createMediaStreamSource(this.stream);
+      this.analyser=this.ctx.createAnalyser(); this.analyser.fftSize=256; this.analyser.smoothingTimeConstant=.6;
+      this.source.connect(this.analyser); this.data=new Uint8Array(this.analyser.frequencyBinCount);
+      this.owner=owner; this.draw(); return true;
+    }catch(e){ toast("Could not open microphone: "+e.message); return false; }
+  },
+  stop(){
+    if(this.raf) cancelAnimationFrame(this.raf); this.raf=null;
+    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+    if(this.ctx){ this.ctx.close().catch(()=>{}); this.ctx=null; }
+    this.analyser=null; this.source=null; this.owner=null;
+  },
+  isOn(){ return !!this.analyser; },
+  frame(){ if(!this.analyser) return null; this.analyser.getByteFrequencyData(this.data); return this.data; },
+  feature(){ // 32-bin normalized spectrum, averaged over a few frames
+    if(!this.analyser) return null;
+    const n=this.data.length, per=Math.floor(n/this.BINS), v=new Array(this.BINS).fill(0);
+    this.analyser.getByteFrequencyData(this.data);
+    for(let b=0;b<this.BINS;b++){ let s=0; for(let k=0;k<per;k++) s+=this.data[b*per+k]; v[b]=(s/per)/255; }
+    return v;
+  },
+  async captureAvg(ms=7000){ // average feature over ms window
+    const acc=new Array(this.BINS).fill(0); let frames=0; const t0=performance.now();
+    while(performance.now()-t0<ms){ const f=this.feature(); if(f){ for(let i=0;i<this.BINS;i++) acc[i]+=f[i]; frames++; } await new Promise(r=>setTimeout(r,60)); }
+    if(!frames) return null; return acc.map(x=>x/frames);
+  },
+  draw(){
+    if(!this.analyser) return;
+    // Training meter
+    const meter=$('sndMeter');
+    if(meter && this.owner==='train'){
+      if(meter.children.length!==this.BINS){ meter.innerHTML=''; for(let i=0;i<this.BINS;i++){ const b=document.createElement('div'); b.className='sb'; meter.appendChild(b); } }
+      const f=this.feature(); if(f) [...meter.children].forEach((el,i)=>el.style.height=Math.max(4,f[i]*100)+'%');
+    }
+    // Live mic meter
+    const liveMeter=$('liveSndMeter');
+    if(liveMeter && this.owner==='live'){
+      if(liveMeter.children.length!==this.BINS){ liveMeter.innerHTML=''; for(let i=0;i<this.BINS;i++){ const b=document.createElement('div'); b.className='sb'; liveMeter.appendChild(b); } }
+      const f=this.feature(); if(f){
+        const energy=f.reduce((a,v)=>a+v,0)/f.length;
+        const isActive=energy>this.SND_SILENCE_ENERGY||0.06;
+        [...liveMeter.children].forEach((el,i)=>el.style.height=Math.max(4,f[i]*100)+'%');
+        // colour the bars: green when active, dim when silent
+        const col=isActive?'linear-gradient(#2E7D55,#46ab69)':'linear-gradient(#3a4060,#54608a)';
+        [...liveMeter.children].forEach(el=>el.style.background=col);
+        // update the mic-active indicator dot
+        const dot=$('liveMicDot'); if(dot) dot.style.background=isActive?'#2E7D55':'#54608a';
+      }
+    }
+    this.raf=requestAnimationFrame(()=>this.draw());
+  }
+};
+
+/* sound training buttons */
+$('micToggleTrain').onclick=async()=>{
+  if(Audio2.isOn()&&Audio2.owner==='train'){ Audio2.stop(); $('micToggleTrain').textContent='Start microphone'; $('recBtn').disabled=true; $('micState').textContent='mic off'; $('micState').className='tag ink'; }
+  else{ const ok=await Audio2.start('train'); if(ok){ $('micToggleTrain').textContent='Stop microphone'; $('recBtn').disabled=false; $('micState').textContent='mic on'; $('micState').className='tag green'; } }
+};
+$('recBtn').onclick=async()=>{
+  if(!Audio2.isOn()){ toast("Start the microphone first"); return; }
+  $('recBtn').disabled=true;
+  let _rSec=7; $('recBtn').textContent='● Recording 7s…';
+  const _rTick=setInterval(()=>{ _rSec--; $('recBtn').textContent=_rSec>0?`● Recording ${_rSec}s…`:'● Finalising…'; if(_rSec<=0) clearInterval(_rTick); },1000);
+  const vec=await Audio2.captureAvg(7000);
+  $('recBtn').textContent='● Record 7s sound'; $('recBtn').disabled=false;
+  if(!vec){ toast("No audio captured"); return; }
+  openNameModal({type:'sound', vec});
+};
+
+/* ===================================================================
+   TRAINED CLASSES list
+   =================================================================== */
+function renderClasses(){
+  const ic=Model.imgCounts(), sc=Model.sndCounts();
+  const names=Array.from(new Set([...Object.keys(Model.meta),...Object.keys(ic),...Object.keys(sc)]));
+  const list=$('classList'); list.innerHTML='';
+  if(names.length===0){ list.innerHTML='<div class="empty-hint">No animals trained yet. Tip: also train an <b>“Empty road”</b> class and mark it <b>Safe</b> so the system knows when it\'s clear.</div>'; $('totalSamples').textContent='0 samples'; return; }
+  let total=0;
+  names.forEach(n=>{
+    const img=ic[n]||0, snd=sc[n]||0; total+=img+snd;
+    const meta=Model.meta[n]||{kind:'animal',thumb:null};
+    const kindTag=meta.kind==='safe'?'<span class="tag green" style="font-size:9px">SAFE</span>':'<span class="tag amber" style="font-size:9px">ANIMAL</span>';
+    const row=document.createElement('div'); row.className='class-row';
+    row.innerHTML=`<img class="swatch" src="${meta.thumb||''}" alt="">
+      <div class="meta"><div class="name">${escapeHtml(n)} ${kindTag}</div><div class="count">🖼️ ${img} image · 🔊 ${snd} sound</div></div>
+      <button class="btn sm ghost" data-del="${escapeHtml(n)}">Remove</button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const n=b.dataset.del;
+    try{ Model.imgKnn.clearClass(n); }catch(e){} try{ Model.sndKnn.clearClass(n); }catch(e){}
+    delete Model.meta[n]; renderClasses();
+  });
+  $('totalSamples').textContent=total+' samples';
+}
+$('resetTrain').onclick=()=>{
+  try{ Model.imgKnn.clearAllClasses(); }catch(e){} try{ Model.sndKnn.clearAllClasses(); }catch(e){}
+  Model.meta={}; renderClasses(); toast("All training cleared");
+};
+
+/* ===================================================================
+   GATE state machine — diorama + serial mirror
+   =================================================================== */
+const Gate = {
+  state:'go', t0:0, DUR:10000, ledBlink:0, ledOn:false,
+  // Gate A pivot (72,105): open=-180° (arm folded back left), closed=0° (arm flat right across road)
+  // Gate B pivot (328,105): open=180° (arm folded back right), closed=0° (arm flat left across road)
+  // Both sweep exactly 180° through vertical on their way across the road.
+  openA:-180, closeA:0,
+  openB: 180, closeB:0,
+  toClose(){ if(this.state==='closing'||this.state==='stop') return; this.state='closing'; this.t0=performance.now(); },
+  toOpen(){ if(this.state==='opening'||this.state==='go') return; this.state='opening'; this.t0=performance.now(); },
+  setArms(degA, degB){
+    $('armA').setAttribute('transform',`rotate(${degA},72,105)`);
+    $('armB').setAttribute('transform',`rotate(${degB},328,105)`);
+  },
+  lerp(a,b,p){ return a+(b-a)*p; },
+  tm(txt,color){ const t=$('tmText'); t.textContent=txt; t.setAttribute('fill',color||'#ff5a5f'); },
+  tick(){
+    const now=performance.now();
+    if(this.state==='closing'){
+      let p=(now-this.t0)/this.DUR; if(p>1)p=1;
+      this.setArms(this.lerp(this.openA,this.closeA,p), this.lerp(this.openB,this.closeB,p));
+      this.tm(String(Math.ceil((1-p)*10)),'#ffd23f');
+      this.alarm(true,true); $('animalIcon').setAttribute('opacity','1');
+      if(p>=1){ this.state='stop'; }
+    } else if(this.state==='stop'){
+      this.setArms(this.closeA, this.closeB); this.tm('STOP','#ff5a5f'); this.alarm(true,true); $('animalIcon').setAttribute('opacity','1');
+    } else if(this.state==='opening'){
+      let p=(now-this.t0)/this.DUR; if(p>1)p=1;
+      this.setArms(this.lerp(this.closeA,this.openA,p), this.lerp(this.closeB,this.openB,p));
+      this.tm(String(Math.ceil((1-p)*10)),'#7CFC9A');
+      this.alarm(false,false); if(p>.6) $('animalIcon').setAttribute('opacity','0');
+      if(p>=1){ this.state='go'; }
+    } else { // go
+      this.setArms(this.openA, this.openB); this.tm('GO','#7CFC9A'); this.alarm(false,false); $('animalIcon').setAttribute('opacity','0');
+    }
+    requestAnimationFrame(()=>this.tick());
+  },
+  alarm(show,blink){
+    const a=$('alarm'); a.setAttribute('opacity',show?'1':'0');
+    if(show && blink){
+      const now=performance.now();
+      if(now-this.ledBlink>250){
+        this.ledBlink=now; this.ledOn=!this.ledOn;
+        const ro=this.ledOn?'1':'0.15';
+        $('ledAred').setAttribute('opacity',ro); $('ledBred').setAttribute('opacity',ro);
+        $('ledAgrn').setAttribute('opacity','0'); $('ledBgrn').setAttribute('opacity','0');
+      }
+    } else {
+      $('ledAred').setAttribute('opacity','0'); $('ledBred').setAttribute('opacity','0');
+      $('ledAgrn').setAttribute('opacity','1'); $('ledBgrn').setAttribute('opacity','1');
+    }
+  }
+};
+
+/* draw forest trees once */
+function plantForest(){
+  const top=$('forestTop'), bot=$('forestBot');
+  const tree=(x,y,s)=>`<g transform="translate(${x},${y})"><rect x="-2" y="6" width="4" height="8" fill="#7a5230"/><circle cx="0" cy="2" r="${7*s}" fill="#3f9d5f"/><circle cx="-5" cy="6" r="${5*s}" fill="#357f4e"/><circle cx="5" cy="6" r="${5*s}" fill="#46ab69"/></g>`;
+  let t='',b='';
+  for(let x=14;x<400;x+=46){ t+=tree(x,40,1+ (x%3)*0.06); }
+  for(let x=30;x<400;x+=48){ b+=tree(x,188,1+ (x%2)*0.08); }
+  top.innerHTML=t; bot.innerHTML=b;
+}
+
+/* ===================================================================
+   LIVE — camera + upload + sound, unified evaluation
+   =================================================================== */
+const Live = {
+  camRunning:false, micRunning:false, raf:null, micTimer:null, state:'clear',
+  lastImg:null, lastSnd:null,   // {label,conf,kind}
+  // --- sound-detection tuning -------------------------------------------------
+  SND_SILENCE_ENERGY: 0.06,   // below this average band-energy = treated as silence/ambient noise
+  SND_MIN_CONF: 55,           // a single-frame sound match must clear this confidence to count at all
+  SND_SWITCH_STREAK: 2,       // how many consecutive frames must agree before we switch the *reported* label
+  sndCandidate:null, sndStreak:0,  // internal debounce state for label switching
+  silentFrames:0,
+  SND_SILENCE_FRAMES_TO_CLEAR: 2, // consecutive quiet frames before we drop lastSnd back to null
+  // Rolling average buffer: accumulate N frames before classifying (matches training's avg approach)
+  SND_AVG_FRAMES: 6,           // ~2 seconds of 350ms ticks — matches captureAvg smoothing
+  _sndAccum: null, _sndAccumCount: 0,
+  startCam(){ this.camRunning=true; if(this.raf) clearTimeout(this.raf); this.camLoop(); },
+  stopCam(){ this.camRunning=false; if(this.raf) clearTimeout(this.raf); this.lastImg=null; Camera.stop(); this.evaluate(); },
+  async camLoop(){
+    if(!this.camRunning||!Camera.isOn()||Camera.owner!=='live'){ return; }
+    if(Model.ready&&Model.imgKnn.getNumClasses()>0){
+      try{ const r=await Model.classifyImage(Camera.grabCanvas(224)); if(r){ const l=r.label; this.lastImg={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; this.evaluate(); } }catch(e){}
+    }
+    this.raf=setTimeout(()=>this.camLoop(),400);
+  },
+  startMic(){ this.micRunning=true; this.sndCandidate=null; this.sndStreak=0; this.silentFrames=0; this._sndAccum=null; this._sndAccumCount=0; if(this.micTimer) clearTimeout(this.micTimer); this.micLoop(); },
+  stopMic(){ this.micRunning=false; if(this.micTimer) clearTimeout(this.micTimer); this.lastSnd=null; this.sndCandidate=null; this.sndStreak=0; this.silentFrames=0; this._sndAccum=null; this._sndAccumCount=0; if(Audio2.owner==='live') Audio2.stop(); this.evaluate(); },
+  async micLoop(){
+    if(!this.micRunning||!Audio2.isOn()||Audio2.owner!=='live'){ return; }
+    // Only run sound classification if at least one sound class has been trained
+    const hasSoundTraining = Model.ready && Model.sndKnn.getNumClasses()>0;
+    if(hasSoundTraining){
+      try{
+        const vec=Audio2.feature();
+        const energy = vec ? vec.reduce((a,v)=>a+v,0)/vec.length : 0;
+
+        if(!vec || energy<=this.SND_SILENCE_ENERGY){
+          // Genuine quiet -- reset accumulator and count consecutive silent frames
+          this._sndAccum=null; this._sndAccumCount=0;
+          this.silentFrames++;
+          if(this.silentFrames>=this.SND_SILENCE_FRAMES_TO_CLEAR){
+            this.lastSnd=null; this.sndCandidate=null; this.sndStreak=0;
+          }
+        } else {
+          this.silentFrames=0;
+          // Accumulate frames into a rolling average (matches training's captureAvg approach)
+          const BINS=Audio2.BINS;
+          if(!this._sndAccum){ this._sndAccum=new Array(BINS).fill(0); this._sndAccumCount=0; }
+          for(let i=0;i<BINS;i++) this._sndAccum[i]+=vec[i];
+          this._sndAccumCount++;
+          // Only classify once we have enough frames for a stable average
+          if(this._sndAccumCount>=this.SND_AVG_FRAMES){
+            const avgVec=this._sndAccum.map(x=>x/this._sndAccumCount);
+            // Slide window: drop oldest portion so next tick builds on recent frames
+            this._sndAccum=this._sndAccum.map((x,i)=>x - avgVec[i]*(this.SND_AVG_FRAMES/2));
+            this._sndAccumCount=Math.floor(this._sndAccumCount/2);
+            const r=await Model.classifySound(avgVec);
+            if(r){
+              const l=r.label, conf=Math.round((r.confidences[l]||0)*100);
+              if(conf>=this.SND_MIN_CONF){
+                if(this.sndCandidate===l){ this.sndStreak++; } else { this.sndCandidate=l; this.sndStreak=1; }
+                if(this.sndStreak>=this.SND_SWITCH_STREAK){
+                  this.lastSnd={label:l,conf,kind:(Model.meta[l]||{}).kind||'animal'};
+                }
+              } else {
+                this.sndCandidate=null; this.sndStreak=0;
+              }
+            }
+          }
+        }
+      }catch(e){}
+    } else {
+      // No sound training -- always clear sound result so mic alone can't trigger detection
+      this.lastSnd=null;
+    }
+    this.evaluate();
+    this.micTimer=setTimeout(()=>this.micLoop(),350);
+  },
+  async classifyUpload(file){
+    if(!Model.ready||Model.imgKnn.getNumClasses()===0){ toast("Train at least one animal first"); return; }
+    const img=new Image();
+    img.onload=async()=>{
+      const c=document.createElement('canvas'); c.width=224;c.height=224; const ctx=c.getContext('2d'); const m=Math.min(img.width,img.height);
+      ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,224,224);
+      const stage=$('stageLive'); const old=stage.querySelector('img.shot'); if(old) old.remove();
+      if(!Camera.isOn()){ const prev=document.createElement('img'); prev.className='shot'; prev.src=c.toDataURL(); stage.insertBefore(prev,stage.firstChild); $('stageLiveEmpty').style.display='none'; $('removeBtnLive').disabled=false; $('removeImgLive').classList.remove('hide'); }
+      const r=await Model.classifyImage(c); if(r){ const l=r.label; this.lastImg={label:l,conf:Math.round((r.confidences[l]||0)*100),kind:(Model.meta[l]||{}).kind||'animal'}; this.evaluate(); }
+    };
+    img.src=URL.createObjectURL(file);
+  },
+  removeUploadedImage(){
+    const stage=$('stageLive'); const old=stage.querySelector('img.shot'); if(old) old.remove();
+    if(!Camera.isOn()) $('stageLiveEmpty').style.display='grid';
+    $('removeBtnLive').disabled=true; $('removeImgLive').classList.add('hide');
+    $('fileLive').value='';
+    this.lastImg=null; this.evaluate();
+    toast("Image removed");
+  },
+  evaluate(){
+    const thresh=parseInt($('thresh').value,10);
+    const FUZZY=50; // partial-match floor: 50–thresh range = "may be similar to X" but still closes gates
+    // update chips
+    const ci=$('chipImg'), cs=$('chipSnd');
+    if(this.lastImg){ $('chipImgV').textContent=`${this.lastImg.label} ${this.lastImg.conf}%`; ci.classList.toggle('hot',this.lastImg.kind!=='safe'&&this.lastImg.conf>=FUZZY); } else { $('chipImgV').textContent='—'; ci.classList.remove('hot'); }
+    if(this.lastSnd){ $('chipSndV').textContent=`${this.lastSnd.label} ${this.lastSnd.conf}%`; cs.classList.toggle('hot',this.lastSnd.kind!=='safe'&&this.lastSnd.conf>=FUZZY); } else { $('chipSndV').textContent='—'; cs.classList.remove('hot'); }
+    // Update live mic label
+    const liveLbl=$('liveMicLabel');
+    if(liveLbl){
+      if(this.lastSnd) liveLbl.textContent=`Hearing: ${this.lastSnd.label} (${this.lastSnd.conf}% confidence)`;
+      else if(Audio2.isOn()&&Audio2.owner==='live') liveLbl.textContent='Listening — waiting for sound…';
+    }
+
+    // strong match = conf >= thresh → definite animal
+    // fuzzy match = 50 ≤ conf < thresh → "may be similar to X" — still closes gates for safety
+    // below 50% or safe class → unknown/clear → gates open
+    let best=null, fuzzy=null;
+    [this.lastImg,this.lastSnd].forEach(r=>{
+      if(!r||r.kind==='safe') return;
+      if(r.conf>=thresh){ if(!best||r.conf>best.conf) best=r; }
+      else if(r.conf>=FUZZY){ if(!fuzzy||r.conf>fuzzy.conf) fuzzy=r; }
+    });
+
+    if(best){ this.danger(best.label, best.conf, false); }
+    else if(fuzzy){ this.danger(fuzzy.label, fuzzy.conf, true); }
+    else{
+      // safe class, below 50%, unknown, or no input → road clear
+      const shown=this.lastImg||this.lastSnd;
+      this.clear(shown?shown.label:'', shown?shown.conf:0);
+    }
+  },
+  danger(name, conf, isFuzzy){
+    this.setVerdict('danger', name, conf, isFuzzy); Gate.toClose();
+    if(this.state!=='danger'){
+      this.state='danger';
+      Serial.send('DETECT:'+(isFuzzy?'?'+name:name));
+    }
+  },
+  clear(label,conf){
+    this.setVerdict('clear',label,conf,false); Gate.toOpen();
+    if(this.state!=='clear'){ this.state='clear'; Serial.send('CLEAR'); }
+  },
+  setVerdict(kind, label, conf, isFuzzy){
+    const v=$('verdict'), sub=$('verdictSub'), bar=$('confBar');
+    if(kind==='danger'){
+      v.textContent = isFuzzy ? `⚠ ${label} detected — STOP!` : `⚠ ${label} detected — STOP!`;
+      v.className='verdict danger';
+      sub.textContent = isFuzzy
+        ? `Partial match ${conf}% · Don't go in that way! Gates closing…`
+        : `Confident match ${conf}% · Don't go in that way! Gates closing…`;
+      bar.style.background='var(--coral)';
+    } else {
+      v.textContent='Road clear'; v.className='verdict safe';
+      sub.textContent=label?`Closest: ${label} (${conf}% — below threshold, road clear)`:'Waiting for input…';
+      bar.style.background='var(--forest)';
+    }
+    bar.style.width=Math.max(0,Math.min(100,conf))+'%';
+  }
+};
+/* live buttons */
+$('camToggleLive').onclick=async()=>{
+  if(Camera.isOn()&&Camera.owner==='live'){ Live.stopCam(); $('stageLiveEmpty').style.display='grid'; $('camToggleLive').textContent='Start camera'; $('camSwitchLive').disabled=true; }
+  else{
+    // Starting the live camera replaces any uploaded still image on the stage
+    const stage=$('stageLive'); const old=stage.querySelector('img.shot'); if(old) old.remove();
+    $('removeBtnLive').disabled=true; $('removeImgLive').classList.add('hide'); $('fileLive').value='';
+    const ok=await Camera.start('live'); if(ok){ $('camToggleLive').textContent='Stop camera'; $('camSwitchLive').disabled=false; Live.startCam(); }
+  }
+};
+$('camSwitchLive').onclick=()=>Camera.switch();
+$('uploadBtnLive').onclick=()=>$('fileLive').click();
+$('fileLive').onchange=e=>{ if(e.target.files[0]) Live.classifyUpload(e.target.files[0]); };
+$('removeBtnLive').onclick=()=>Live.removeUploadedImage();
+$('removeImgLive').onclick=()=>Live.removeUploadedImage();
+$('micToggleLive').onclick=async()=>{
+  if(Audio2.isOn()&&Audio2.owner==='live'){
+    Live.stopMic();
+    $('micToggleLive').textContent='🎙 Listen for sound';
+    $('liveMicPanel').style.display='none';
+  } else {
+    const ok=await Audio2.start('live');
+    if(ok){
+      $('micToggleLive').textContent='🛑 Stop listening';
+      $('liveMicPanel').style.display='block';
+      Live.startMic();
+    }
+  }
+};
+$('thresh').oninput=e=>{ $('threshLabel').textContent=e.target.value+'%'; Live.evaluate(); };
+
+/* ===================================================================
+   ADMIN
+   =================================================================== */
+const Admin={
+  unlocked:false,
+  open(){ if(this.unlocked){ this.show(); return; } $('pwInput').value=''; $('pwErr').textContent=''; $('pwModal').classList.add('show'); setTimeout(()=>$('pwInput').focus(),50); },
+  tryUnlock(){ if($('pwInput').value===ADMIN_PASSWORD){ this.unlocked=true; $('pwModal').classList.remove('show'); this.show(); $('adminNavBtn').classList.add('unlocked-mode'); $('adminLockIcon').textContent='🔓'; toast("Admin unlocked"); } else $('pwErr').textContent="Wrong password."; },
+  show(){ $('adminLocked').classList.add('hide'); $('adminPanel').classList.remove('hide'); $('neoCard').classList.remove('hide'); },
+  hide(){ $('adminLocked').classList.remove('hide'); $('adminPanel').classList.add('hide'); $('neoCard').classList.add('hide'); },
+  lock(){ this.unlocked=false; this.hide(); $('adminNavBtn').classList.remove('unlocked-mode','active-mode'); $('adminLockIcon').textContent='🔒'; switchMode('training'); toast("Admin locked"); },
+  angles(){ return { Aopen:+$('Aopen').value, Aclose:+$('Aclose').value, Bopen:+$('Bopen').value, Bclose:+$('Bclose').value }; },
+  pushAngles(quiet){ const a=this.angles(); Serial.send(`CFG:${a.Aopen},${a.Aclose},${a.Bopen},${a.Bclose}`); if(!quiet) toast("Angles sent to ESP32"); }
+};
+$('unlockBtn').onclick=()=>Admin.open();
+$('submitPw').onclick=()=>Admin.tryUnlock();
+$('pwInput').addEventListener('keydown',e=>{ if(e.key==='Enter') Admin.tryUnlock(); });
+$('cancelPw').onclick=()=>$('pwModal').classList.remove('show');
+$('logoutAdmin').onclick=()=>Admin.lock();
+['Aopen','Aclose','Bopen','Bclose'].forEach(id=>$(id).oninput=e=>{ $('v'+id).textContent=e.target.value+'°'; });
+$('sendAngles').onclick=()=>Admin.pushAngles(false);
+$('testOpen').onclick=()=>Serial.send('GATE:OPEN');
+$('testClose').onclick=()=>Serial.send('GATE:CLOSE');
+$('sendLcd').onclick=()=>{ Serial.send(`LCD:${$('lcdLine1').value}|${$('lcdLine2').value}|${$('lcdLine3').value}|${$('lcdLine4').value}`); toast("Sent to LCD"); };
+$('lcdClear').onclick=()=>{ Serial.send('LCD:||||'); toast("LCD cleared"); };
+$('lcdDefault').onclick=()=>{ Serial.send('LCD:DEFAULT'); toast("Default message restored"); };
+$('silence').onclick=()=>Serial.send('CLEAR');
+
+// WS2812B NeoPixel controls
+function hexToRgb(hex){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return {r,g,b}; }
+function setNeoPreset(hex){ $('neoColorPicker').value=hex; const {r,g,b}=hexToRgb(hex); Serial.send(`NEO:COLOR:${r},${g},${b}`); toast(`Strip colour set`); }
+$('neoOn').onclick=()=>{ Serial.send('NEO:ON'); toast("Strip ON"); };
+$('neoOff').onclick=()=>{ Serial.send('NEO:OFF'); toast("Strip OFF"); };
+$('neoColor').onclick=()=>{ const {r,g,b}=hexToRgb($('neoColorPicker').value); Serial.send(`NEO:COLOR:${r},${g},${b}`); toast("Colour sent"); };
+
+/* ===================================================================
+   PERSISTENCE — IndexedDB saves KNN + meta across refreshes
+   End Session wipes all stored data
+   =================================================================== */
+const DB = {
+  DB_NAME:'wildguard', DB_VER:1, STORE:'session',
+  open(){
+    return new Promise((res,rej)=>{
+      const req=indexedDB.open(this.DB_NAME, this.DB_VER);
+      req.onupgradeneeded=e=>e.target.result.createObjectStore(this.STORE);
+      req.onsuccess=e=>res(e.target.result);
+      req.onerror=e=>rej(e.target.error);
+    });
+  },
+  async set(key,val){
+    const db=await this.open(); return new Promise((res,rej)=>{
+      const tx=db.transaction(this.STORE,'readwrite');
+      tx.objectStore(this.STORE).put(val,key);
+      tx.oncomplete=()=>res(); tx.onerror=e=>rej(e.target.error);
+    });
+  },
+  async get(key){
+    const db=await this.open(); return new Promise((res,rej)=>{
+      const tx=db.transaction(this.STORE,'readonly');
+      const req=tx.objectStore(this.STORE).get(key);
+      req.onsuccess=e=>res(e.target.result); req.onerror=e=>rej(e.target.error);
+    });
+  },
+  async clear(){
+    const db=await this.open(); return new Promise((res,rej)=>{
+      const tx=db.transaction(this.STORE,'readwrite');
+      tx.objectStore(this.STORE).clear();
+      tx.oncomplete=()=>res(); tx.onerror=e=>rej(e.target.error);
+    });
+  }
+};
+
+// Save the full session (KNN datasets as Float32 arrays + meta) to IndexedDB
+async function saveSession(){
+  try{
+    const imgDatasets={}, sndDatasets={};
+    // imgKnn and sndKnn store tf.Tensor examples; serialize them as Float32Array
+    const imgCnt=Model.imgKnn.getClassExampleCount?Model.imgKnn.getClassExampleCount():{};
+    const sndCnt=Model.sndKnn.getClassExampleCount?Model.sndKnn.getClassExampleCount():{};
+    // use getClassifierDataset to get raw tensors
+    const imgDs=Model.imgKnn.getClassifierDataset();
+    for(const [k,t] of Object.entries(imgDs)){ imgDatasets[k]={data:Array.from(t.dataSync()),shape:t.shape}; }
+    const sndDs=Model.sndKnn.getClassifierDataset();
+    for(const [k,t] of Object.entries(sndDs)){ sndDatasets[k]={data:Array.from(t.dataSync()),shape:t.shape}; }
+    await DB.set('imgKnn', imgDatasets);
+    await DB.set('sndKnn', sndDatasets);
+    await DB.set('meta', Model.meta);
+  }catch(e){ console.warn('saveSession failed:',e); }
+}
+
+// Restore session from IndexedDB after model loads
+async function restoreSession(){
+  try{
+    const imgDatasets=await DB.get('imgKnn');
+    const sndDatasets=await DB.get('sndKnn');
+    const meta=await DB.get('meta');
+    if(imgDatasets){
+      const ds={};
+      for(const [k,v] of Object.entries(imgDatasets)){ ds[k]=tf.tensor(v.data,v.shape); }
+      Model.imgKnn.setClassifierDataset(ds);
+    }
+    if(sndDatasets){
+      const ds={};
+      for(const [k,v] of Object.entries(sndDatasets)){ ds[k]=tf.tensor(v.data,v.shape); }
+      Model.sndKnn.setClassifierDataset(ds);
+    }
+    if(meta){ Model.meta=meta; }
+    if(meta&&Object.keys(meta).length){ renderClasses(); toast('Session restored ✓'); }
+  }catch(e){ console.warn('restoreSession failed:',e); }
+}
+
+// Hook saveSession into every sample-add path
+const _origConfirmName=$('confirmName').onclick;
+$('confirmName').onclick=async function(){
+  _origConfirmName&&_origConfirmName.call(this);
+  // saveSession fires after the modal confirm logic runs
+  setTimeout(saveSession,200);
+};
+// Also hook the remove buttons via the existing renderClasses MutationObserver approach
+// We'll override the resetTrain button too:
+const _origResetTrain=$('resetTrain').onclick;
+$('resetTrain').onclick=async()=>{ _origResetTrain&&_origResetTrain(); saveSession(); };
+
+$('endSessionBtn').onclick=()=>{
+  const confirmed=confirm('End session? This will permanently wipe all training data for this session.');
+  if(!confirmed) return;
+  // stop all hardware
+  try{ Camera.stop(); }catch(e){}
+  try{ Audio2.stop(); }catch(e){}
+  try{ Serial.disconnect(true); }catch(e){}
+  // wipe KNN
+  try{ Model.imgKnn.clearAllClasses(); }catch(e){}
+  try{ Model.sndKnn.clearAllClasses(); }catch(e){}
+  Model.meta={};
+  // wipe IndexedDB then reload
+  DB.clear().finally(()=>{ window.location.reload(); });
+};
+
+/* ===================================================================
+   MODE SWITCHING
+   =================================================================== */
+function switchMode(mode){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mode===mode));
+  ['training','live','admin'].forEach(m=>$('view-'+m).classList.toggle('hide', m!==mode));
+  $('adminNavBtn').classList.toggle('active-mode', mode==='admin');
+  if(mode!=='live'){ /* keep loops running so detection continues if user flips back; but pause cam loop visual only */ }
+  if(mode==='admin') Admin.open();
+}
+document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>switchMode(tab.dataset.mode));
+$('adminNavBtn').onclick=()=>switchMode('admin');
+['nameModal','pwModal'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target.id===id) e.currentTarget.classList.remove('show'); }));
+
+/* ===================================================================
+   BOOT
+   =================================================================== */
+window.addEventListener('load',()=>{
+  plantForest(); Gate.tick();
+  if(!Serial.supported()) Serial.log("// This browser doesn't support Web Serial. Use Chrome/Edge on desktop.",'sys');
+  Model.load().then(()=>restoreSession()).catch(()=>{ $('modelBanner').innerHTML='⚠ Could not load the vision model. Check your internet connection and refresh.'; });
+});
+
+</script>
+</body>
+</html>
